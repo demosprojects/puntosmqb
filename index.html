@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Más Que Puntos | Club de Beneficios</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #050508; color: #f8fafc; overflow-x: hidden; }
+        
+        /* Glassmorphism General */
+        .glass { 
+            background: rgba(255, 255, 255, 0.02); 
+            backdrop-filter: blur(12px); 
+            border: 1px solid rgba(255, 255, 255, 0.08); 
+        }
+
+        /* Contenedor para el efecto 3D */
+        .card-container {
+            perspective: 1200px;
+            width: 100%;
+        }
+
+        /* Estética Black Card Premium */
+        .card-premium {
+            background: linear-gradient(145deg, #111827 0%, #020617 100%);
+            box-shadow: 0 40px 80px -15px rgba(0, 0, 0, 0.9);
+            transform-style: preserve-3d;
+            transition: transform 0.1s ease-out;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Textura de material */
+        .card-premium::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3BaseYFilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/baseYFilter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+            opacity: 0.05;
+            mix-blend-mode: overlay;
+            pointer-events: none;
+        }
+
+        /* Brillo dinámico */
+        .card-glare {
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at var(--x) var(--y), rgba(255,255,255,0.05) 0%, transparent 60%);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .card-premium:hover .card-glare { opacity: 1; }
+
+        /* Toast Notifications */
+        #toast-container {
+            position: fixed;
+            bottom: 1.5rem;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            align-items: center;
+            pointer-events: none;
+        }
+        .toast {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 1rem 1.5rem;
+            border-radius: 1.5rem;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 0.875rem;
+            font-weight: 600;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            pointer-events: all;
+            min-width: 260px;
+            max-width: 380px;
+            box-shadow: 0 25px 50px -10px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.06);
+            animation: toastIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+        .toast.removing {
+            animation: toastOut 0.3s ease-in forwards;
+        }
+        .toast-error   { background: rgba(220,38,38,0.15);  border: 1px solid rgba(239,68,68,0.3);    color: #fca5a5; }
+        .toast-success { background: rgba(5,150,105,0.15);  border: 1px solid rgba(16,185,129,0.3);   color: #6ee7b7; }
+        .toast-info    { background: rgba(37,99,235,0.15);  border: 1px solid rgba(59,130,246,0.3);   color: #93c5fd; }
+        .toast-icon {
+            width: 2rem; height: 2rem; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0; font-size: 1rem;
+        }
+        .toast-error .toast-icon   { background: rgba(239,68,68,0.2); }
+        .toast-success .toast-icon { background: rgba(16,185,129,0.2); }
+        .toast-info .toast-icon    { background: rgba(59,130,246,0.2); }
+        @keyframes toastIn  { from { opacity:0; transform:translateY(20px) scale(0.95); } to { opacity:1; transform:translateY(0) scale(1); } }
+        @keyframes toastOut { from { opacity:1; transform:translateY(0) scale(1); } to { opacity:0; transform:translateY(10px) scale(0.95); } }
+
+        /* Chip Plateado */
+        .card-chip {
+            width: 50px;
+            height: 38px;
+            background: linear-gradient(135deg, #94a3b8 0%, #cbd5e1 50%, #64748b 100%);
+            border-radius: 8px;
+            position: relative;
+            box-shadow: inset 0 1px 2px rgba(255,255,255,0.8), 0 2px 5px rgba(0,0,0,0.5);
+            transform: translateZ(30px);
+        }
+
+        /* Elevación 3D de elementos */
+        .text-3d { transform: translateZ(50px); }
+        .logo-3d { transform: translateZ(60px); }
+    </style>
+</head>
+<body class="selection:bg-blue-500/30">
+
+    <div id="loginSection" class="min-h-screen flex items-center justify-center p-6">
+    <div class="w-full max-w-sm text-center space-y-8 animate-in fade-in zoom-in duration-700">
+        
+        <div class="space-y-4">
+            <img src="https://imagedelivery.net/ut8GNCA1obOu4JnXrJ_J9Q/e7b59903-06e0-48f8-1bb1-71bd6da8a800/public" 
+                 alt="Logo Más Que Burgers" 
+                 class="w-48 mx-auto drop-shadow-[0_0_20px_rgba(37,99,235,0.4)]">
+            
+            <div class="space-y-2">
+                <h1 class="text-3xl font-black italic uppercase tracking-tighter">Club de Puntos</h1>
+                <p class="text-slate-400 text-sm font-medium px-4">
+                    Ingresá los <span class="text-blue-400 font-bold">8 números</span> de tu tarjeta para consultar tus puntos y canjear premios.
+                </p>
+            </div>
+        </div>
+
+        <div class="space-y-6">
+            <div class="relative group">
+                <label for="tarjetaInput" class="block text-[10px] uppercase tracking-[0.3em] text-slate-500 font-bold mb-3 transition-colors group-focus-within:text-blue-500">
+                    Número de Tarjeta
+                </label>
+                
+                <input id="tarjetaInput" 
+                       type="tel" 
+                       maxlength="8" 
+                       placeholder="0000 0000" 
+                       class="w-full p-5 rounded-2xl bg-slate-900/80 border border-slate-800 text-center text-3xl font-bold tracking-[0.3em] outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10 transition-all text-white placeholder:text-slate-800"
+                >
+                
+                <p class="mt-3 text-[10px] text-slate-500 italic">
+                    Lo encontrás en el frente de tu tarjeta física.
+                </p>
+            </div>
+
+            <button onclick="login()" 
+                    class="w-full bg-blue-700 hover:bg-blue-600 p-5 rounded-2xl font-bold text-lg shadow-xl shadow-blue-900/20 uppercase tracking-widest transition-all active:scale-95 flex items-center justify-center gap-3 group">
+                <span>Ver mis beneficios</span>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+            </button>
+        </div>
+
+        <p class="text-[10px] text-slate-600 uppercase tracking-widest font-bold">
+            Más sabor en cada bocado
+        </p>
+    </div>
+</div>
+
+    <div id="appSection" class="hidden min-h-screen">
+        <nav class="p-4 lg:px-12 flex justify-between items-center border-b border-white/5 bg-slate-950/80 sticky top-0 z-50 backdrop-blur-md">
+            <img src="https://imagedelivery.net/ut8GNCA1obOu4JnXrJ_J9Q/e7b59903-06e0-48f8-1bb1-71bd6da8a800/public" class="h-10 w-auto" alt="Logo">
+            <button onclick="logout()" class="text-slate-400 hover:text-white text-xs font-bold bg-white/5 px-4 py-2 rounded-xl uppercase tracking-wider border border-white/5">Salir</button>
+        </nav>
+
+        <main class="max-w-7xl mx-auto p-6 lg:p-12">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-12">
+                
+                <div class="lg:col-span-5 space-y-8 lg:sticky lg:top-28">
+                    <div class="card-container" id="scene">
+                        <div class="mx-auto w-full max-w-[340px] lg:max-w-full">
+                        <div id="card" class="card-premium rounded-[1.8rem] p-6 sm:p-8 aspect-[1.6/1] flex flex-col justify-between">
+                            <div class="card-glare"></div>
+                            
+                            <div class="relative z-10 flex justify-between items-start">
+                                <div class="card-chip scale-90 sm:scale-100 origin-top-left"></div>
+                                <div class="text-right opacity-20">
+                                    <p class="text-[7px] sm:text-[8px] font-bold text-white uppercase tracking-[0.4em]">Más que Burgers Card</p>
+                                </div>
+                            </div>
+
+                            <div class="relative z-10 text-3d">
+                                <p class="text-[9px] sm:text-[10px] uppercase font-bold text-blue-400/50 mb-1 tracking-[0.2em]">Puntos Disponibles</p>
+                                <div class="flex items-baseline gap-2">
+                                    <span id="userPoints" class="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tighter text-white drop-shadow-2xl">0</span>
+                                    <span class="text-base sm:text-lg font-bold text-white/30 italic">PTS</span>
+                                </div>
+                            </div>
+
+                            <div class="relative z-10 flex justify-between items-end border-t border-white/5 pt-4 sm:pt-5">
+                                <div class="space-y-1">
+                                    <h2 id="userName" class="text-sm sm:text-base font-bold tracking-widest text-white uppercase italic text-3d">Cargando...</h2>
+                                    <p id="cardNumberDisplay" class="font-mono text-[10px] text-blue-400/30 tracking-[0.3em]">0000 0000</p>
+                                </div>
+                                
+                                <div class="logo-3d">
+                                    <img src="https://imagedelivery.net/ut8GNCA1obOu4JnXrJ_J9Q/e7b59903-06e0-48f8-1bb1-71bd6da8a800/public" 
+                                         class="h-9 sm:h-12 w-auto drop-shadow-[0_8px_15px_rgba(0,0,0,0.6)]" 
+                                         alt="Brand Logo">
+                                </div>
+                            </div>
+                            
+                            <div class="absolute -bottom-20 -left-20 w-64 h-64 bg-blue-600/5 rounded-full blur-[100px]"></div>
+                        </div>
+                        </div>
+                    </div>
+
+                    <div class="glass rounded-3xl p-6 border border-white/5">
+                        <p class="text-slate-400 text-xs leading-relaxed font-medium">
+                            🍔 <b class="text-white">Tip Pro:</b> Canjeá tus puntos por combos gratis. Mostrá esta pantalla en caja antes de pedir tu cuenta.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-7 space-y-12">
+                    <section class="glass p-8 rounded-[2.5rem] border border-white/10 bg-gradient-to-r from-blue-900/10 to-transparent">
+                        <div class="flex justify-between items-end mb-6">
+                            <div>
+                                <h3 class="text-xl font-bold uppercase italic">Tu próximo premio</h3>
+                                <p id="progresoTexto" class="text-slate-400 text-sm mt-1"></p>
+                            </div>
+                            <span id="porcentajeTexto" class="text-4xl font-black text-blue-500">0%</span>
+                        </div>
+                        <div class="w-full bg-slate-900 rounded-full h-5 p-1 border border-white/5">
+                            <div id="barraProgreso" class="bg-gradient-to-r from-blue-600 to-emerald-400 h-full rounded-full transition-all duration-1000 w-0 shadow-[0_0_15px_rgba(37,99,235,0.4)]"></div>
+                        </div>
+                    </section>
+
+                    <section>
+                        <h3 class="text-xl font-bold uppercase italic mb-6">Canjes disponibles</h3>
+                        <div id="premiosContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+                    </section>
+
+                    <section>
+                        <h3 class="text-xl font-bold uppercase italic mb-6">Actividad Reciente</h3>
+                        <div id="historialContainer" class="bg-slate-900/30 border border-white/5 rounded-[2.5rem] overflow-hidden"></div>
+                    </section>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- Toast container -->
+    <div id="toast-container"></div>
+
+    <script src="app.js"></script>
+    <script>
+        // Sistema de Toast Notifications
+        function showToast(message, type = 'info', duration = 4000) {
+            const icons = { error: '⚠️', success: '✓', info: 'ℹ' };
+            const container = document.getElementById('toast-container');
+
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.innerHTML = `
+                <div class="toast-icon">${icons[type] || icons.info}</div>
+                <span>${message}</span>
+            `;
+
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.add('removing');
+                toast.addEventListener('animationend', () => toast.remove());
+            }, duration);
+        }
+
+        // Lógica del efecto 3D de la tarjeta
+        const card = document.getElementById('card');
+        const scene = document.getElementById('scene');
+
+        scene.addEventListener('mousemove', (e) => {
+            const rect = scene.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            const centerX = rect.width / 2;
+            const centerY = rect.height / 2;
+            
+            const rotateX = (y - centerY) / 10;
+            const rotateY = (centerX - x) / 10;
+
+            card.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+            
+            // Actualizar posición del brillo
+            card.style.setProperty('--x', `${x}px`);
+            card.style.setProperty('--y', `${y}px`);
+        });
+
+        scene.addEventListener('mouseleave', () => {
+            card.style.transform = `rotateX(0deg) rotateY(0deg)`;
+        });
+    </script>
+</body>
+</html>

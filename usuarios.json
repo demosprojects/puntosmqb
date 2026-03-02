@@ -1,0 +1,18 @@
+[
+  {
+    "tarjeta": "48219304",
+    "asignada": false,
+    "nombre": "",
+    "telefono": "",
+    "puntos": 0,
+    "historial": []
+  },
+  {
+    "tarjeta": "12345678",
+    "asignada": true,
+    "nombre": "Leonel",
+    "telefono": "3644123456",
+    "puntos": 1250,
+    "historial": [ ]
+  }
+]
