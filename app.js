@@ -1,58 +1,74 @@
-let usuarios = [];
 let usuarioActual = null;
 
-// Configuración de premios (Sincronizado con la estética de Más Que Burgers)
-const premios = [
-    { 
-        id: 1, 
-        nombre: "Blue simple", 
-        puntos: 500, 
-        imagen: "https://res.cloudinary.com/dl2tftoum/image/upload/w_600,q_auto,f_auto/v1772409294/v87b4kjgyhqdhdrnz0dx.webp", // Pegá acá el link de la Blue Simple
-        desc: "Canjea una Blue simple." 
-    },
-    { 
-        id: 2, 
-        nombre: "American doble", 
-        puntos: 1500, 
-        imagen: "https://res.cloudinary.com/dl2tftoum/image/upload/w_600,q_auto,f_auto/v1771375253/u676h7nh4dzokypxengm.webp", // Pegá acá el link de la American Doble
-        desc: "Canjea una American doble" 
-    },
-    { 
-        id: 3, 
-        nombre: "Yankee triple", 
-        puntos: 3000, 
-        imagen: "https://res.cloudinary.com/dl2tftoum/image/upload/w_600,q_auto,f_auto/v1771375550/dnscdxhybleudjhrlyvp.webp", // Pegá acá el link de la Yankee Triple
-        desc: "Canjea una Yankee triple" 
-    }
-];
+// ── Helpers de UI ──────────────────────────────────────────
+function showLoader()  { document.getElementById('global-loader')?.classList.remove('hidden-loader'); }
+function hideLoader()  { document.getElementById('global-loader')?.classList.add('hidden-loader'); }
+
+function setLoginLoading(loading) {
+    const btn     = document.getElementById('loginBtn');
+    const text    = document.getElementById('loginBtnText');
+    const arrow   = document.getElementById('loginBtnArrow');
+    const spinner = document.getElementById('loginBtnSpinner');
+    if (!btn) return;
+    btn.disabled = loading;
+    btn.classList.toggle('opacity-60', loading);
+    btn.classList.toggle('cursor-not-allowed', loading);
+    text?.classList.toggle('hidden', loading);
+    arrow?.classList.toggle('hidden', loading);
+    spinner?.classList.toggle('hidden', !loading);
+    if (loading) text.textContent = '';
+    else text.textContent = 'Ver mis beneficios';
+}
+
+// Configuración de premios — se carga dinámicamente desde Firebase
+// (colección "productos" con canjeable: true)
+let premios = [];
 
 // Al cargar la página iniciamos base de datos y sesión
 window.onload = async () => {
     try {
-        const res = await fetch("usuarios.json");
-        usuarios = await res.json();
+        await initDB();
+        await initProductos();
+
+        // Premios = productos canjeables, ordenados por puntos asc
+        premios = productos
+            .filter(p => p.canjeable !== false)
+            .sort((a, b) => a.puntos - b.puntos);
         
         const tarjetaGuardada = localStorage.getItem('puntos_user_tarjeta');
         if (tarjetaGuardada) {
-            iniciarConTarjeta(tarjetaGuardada);
+            await iniciarConTarjeta(tarjetaGuardada);
         }
     } catch (e) {
-        console.error("Error al conectar con la base de datos local.");
+        console.error("Error al conectar con Firebase.", e);
     }
 
-    // Inicializar el efecto 3D si existe el elemento en el DOM
-    iniciarEfecto3D();
+    hideLoader();
+
+    if (typeof iniciarEfecto3D === 'function') {
+        iniciarEfecto3D();
+    }
 };
 
-function login() {
-    const tarjeta = document.getElementById("tarjetaInput").value;
-    iniciarConTarjeta(tarjeta);
+async function login() {
+    const tarjeta = document.getElementById("tarjetaInput").value.replace(/\s+/g, '');
+    if (tarjeta.length === 0) return;
+    setLoginLoading(true);
+    await iniciarConTarjeta(tarjeta);
+    setLoginLoading(false);
 }
 
-function iniciarConTarjeta(numTarjeta) {
-    const user = usuarios.find(u => u.tarjeta === numTarjeta);
+async function iniciarConTarjeta(numTarjeta) {
+    // Usamos getUsuario() para ir a buscar la tarjeta DIRECTO a Firebase
+    const user = await getUsuario(numTarjeta);
 
     if (user) {
+        // Verificamos que la tarjeta ya haya sido activada por el admin
+        if (!user.asignada) {
+            showToast("Esta tarjeta es válida pero aún no fue activada en el local.", "warn");
+            return;
+        }
+
         usuarioActual = user;
         localStorage.setItem('puntos_user_tarjeta', numTarjeta);
         
@@ -71,7 +87,6 @@ function logout() {
 }
 
 function renderAll() {
-    // Datos de perfil y tarjeta
     document.getElementById("userName").innerText = usuarioActual.nombre;
     document.getElementById("userPoints").innerText = usuarioActual.puntos.toLocaleString();
     document.getElementById("cardNumberDisplay").innerText = usuarioActual.tarjeta.replace(/(\d{4})(\d{4})/, '$1 $2');
@@ -99,33 +114,40 @@ function renderPremios() {
     const container = document.getElementById("premiosContainer");
     container.innerHTML = "";
 
+    if (premios.length === 0) {
+        container.innerHTML = `
+            <div class="col-span-full glass p-10 rounded-3xl text-center text-slate-500 italic text-sm">
+                Próximamente habrá premios disponibles para canjear 🍔
+            </div>`;
+        return;
+    }
+
     premios.forEach(p => {
         const puede = usuarioActual.puntos >= p.puntos;
+        const tieneImagen = p.imagen && p.imagen.trim() !== '';
         container.innerHTML += `
             <div class="glass p-6 rounded-3xl flex flex-col justify-between gap-6 transition-all hover:bg-white/[0.05]">
                 <div class="flex gap-4">
-                    <div class="w-20 h-20 flex-shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-slate-800">
-                        <img src="${p.imagen}" 
-                             alt="${p.nombre}" 
-                             class="w-full h-full object-cover shadow-lg"
-                             onerror="this.src='https://via.placeholder.com/150?text=Burger'">
+                    <div class="w-20 h-20 flex-shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-slate-800 flex items-center justify-center">
+                        ${tieneImagen
+                            ? `<img src="${p.imagen}" alt="${p.nombre}" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML='<span class=\\'text-3xl\\'>🍔</span>'">`
+                            : `<span class="text-3xl">🍔</span>`
+                        }
                     </div>
-                    
                     <div>
                         <h4 class="font-bold text-lg text-white leading-tight">${p.nombre}</h4>
-                        <p class="text-[11px] text-slate-500 mt-1 uppercase font-semibold">${p.desc}</p>
+                        <p class="text-[11px] text-slate-500 mt-1 uppercase font-semibold">${p.categoria || ''}</p>
                     </div>
                 </div>
-                
                 <div class="flex items-center justify-between border-t border-white/5 pt-4">
                     <span class="text-blue-400 font-black tracking-tighter text-lg">${p.puntos} PTS</span>
-                    <button ${puede ? "" : "disabled"} 
+                    <button disabled
                         class="px-6 py-2 rounded-xl font-bold text-xs uppercase transition-all ${
-                        puede 
-                        ? "bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-600/20 active:scale-95 text-white" 
+                        puede
+                        ? "bg-blue-600 shadow-lg shadow-blue-600/20 text-white"
                         : "bg-slate-800 text-slate-500 opacity-40 cursor-not-allowed"
                     }">
-                        ${puede ? "Canjear" : "Faltan pts"}
+                        ${puede ? "¡Podés canjear!" : "Faltan pts"}
                     </button>
                 </div>
             </div>
