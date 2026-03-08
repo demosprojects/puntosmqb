@@ -396,6 +396,80 @@
 
     </main>
 
+    <!-- ══ MODAL EDITAR TARJETA ════════════════════════════════════ -->
+    <div id="modalEditarTarjeta" class="hidden fixed inset-0 z-[99997] flex items-center justify-center p-6" style="background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);">
+        <div class="glass rounded-[2rem] p-8 w-full max-w-md space-y-6 border border-white/10" style="background:rgba(5,5,8,0.97);">
+
+            <!-- Header -->
+            <div class="flex items-start justify-between">
+                <div>
+                    <h2 class="text-lg font-black uppercase italic tracking-tighter">Editar Tarjeta</h2>
+                    <p id="modalEditarNumero" class="text-xs text-blue-400 font-mono mt-1 tracking-widest"></p>
+                </div>
+                <button onclick="cerrarModalEditar()" class="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-all text-sm">✕</button>
+            </div>
+
+            <!-- Datos personales -->
+            <div class="space-y-4">
+                <p class="text-[10px] uppercase font-black text-slate-500 tracking-widest">Datos del cliente</p>
+                <div class="space-y-3">
+                    <div>
+                        <label class="text-[10px] uppercase font-bold text-slate-500 ml-1 block mb-1.5">Nombre</label>
+                        <input id="editNombre" type="text" placeholder="Nombre completo"
+                            class="w-full p-3.5 rounded-xl bg-slate-900 border border-slate-800 text-sm font-bold outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10 transition-all text-white placeholder:text-slate-700">
+                    </div>
+                    <div>
+                        <label class="text-[10px] uppercase font-bold text-slate-500 ml-1 block mb-1.5">Teléfono</label>
+                        <input id="editTelefono" type="text" placeholder="Número de teléfono"
+                            class="w-full p-3.5 rounded-xl bg-slate-900 border border-slate-800 text-sm font-bold outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10 transition-all text-white placeholder:text-slate-700">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Último movimiento -->
+            <div id="editUltimoMov" class="hidden space-y-3">
+                <div class="border-t border-white/5 pt-5">
+                    <p class="text-[10px] uppercase font-black text-slate-500 tracking-widest mb-3">Último movimiento</p>
+                    <div class="flex items-center justify-between p-4 rounded-xl bg-white/[0.03] border border-white/5">
+                        <div class="flex items-center gap-3">
+                            <div id="editMovIcono" class="w-9 h-9 rounded-full flex items-center justify-center text-sm"></div>
+                            <div>
+                                <p id="editMovDescripcion" class="text-sm font-bold text-slate-200"></p>
+                                <p id="editMovFecha" class="text-[10px] text-slate-500 uppercase font-black mt-0.5"></p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span id="editMovPuntos" class="font-black text-lg"></span>
+                            <button onclick="anularUltimoMovimiento()" id="btnAnular"
+                                class="px-3 py-1.5 rounded-lg bg-rose-500/10 text-rose-400 text-[10px] font-bold hover:bg-rose-500/20 transition-all border border-rose-500/10 flex items-center gap-1.5">
+                                <span id="btnAnularText">Anular</span>
+                                <div id="btnAnularSpinner" class="btn-spinner hidden"></div>
+                            </button>
+                        </div>
+                    </div>
+                    <p class="text-[10px] text-slate-600 mt-2 ml-1">Solo se puede anular el último movimiento.</p>
+                </div>
+            </div>
+
+            <!-- Sin movimientos -->
+            <div id="editSinMov" class="hidden border-t border-white/5 pt-5">
+                <p class="text-[10px] uppercase font-black text-slate-500 tracking-widest mb-2">Último movimiento</p>
+                <p class="text-xs text-slate-600 italic">Esta tarjeta no tiene movimientos registrados.</p>
+            </div>
+
+            <!-- Acciones -->
+            <div class="flex gap-3 pt-1">
+                <button onclick="cerrarModalEditar()" class="flex-1 bg-white/5 hover:bg-white/10 p-3 rounded-xl font-bold text-xs uppercase tracking-widest text-slate-400 transition-all border border-white/5">
+                    Cancelar
+                </button>
+                <button onclick="guardarEdicionTarjeta()" class="flex-1 bg-blue-600 hover:bg-blue-500 p-3 rounded-xl font-bold text-xs uppercase tracking-widest transition-all shadow-lg shadow-blue-900/20 flex items-center justify-center gap-2">
+                    <span id="btnGuardarEditText">Guardar Cambios</span>
+                    <div id="btnGuardarEditSpinner" class="btn-spinner hidden"></div>
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- ══ MODAL PIN DUEÑO ══════════════════════════════════════ -->
     <div id="modalPin" class="hidden fixed inset-0 z-[99998] flex items-center justify-center p-6" style="background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);">
         <div class="glass rounded-[2rem] p-10 w-full max-w-sm space-y-6 border border-blue-500/20 animate-in zoom-in duration-300" style="background:rgba(5,5,8,0.95);">
