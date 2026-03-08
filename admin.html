@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Puntos | Más Que Burgers</title>
+     <link rel="icon" href="https://imagedelivery.net/ut8GNCA1obOu4JnXrJ_J9Q/e7b59903-06e0-48f8-1bb1-71bd6da8a800/public" type="image/x-icon">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
     <style>
@@ -20,9 +21,51 @@
         .filtro-btn { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); color: #64748b; }
         .filtro-btn:hover { background: rgba(255,255,255,0.06); color: #94a3b8; }
         .filtro-active { background: rgba(59,130,246,0.1) !important; border-color: rgba(59,130,246,0.3) !important; color: #60a5fa !important; }
+
+        /* ── Loader overlay ── */
+        #global-loader {
+            position: fixed; inset: 0; z-index: 99999;
+            background: #050508;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center; gap: 2rem;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+        #global-loader.hidden-loader { opacity: 0; visibility: hidden; pointer-events: none; }
+        .loader-ring {
+            width: 52px; height: 52px;
+            border: 3px solid rgba(255,255,255,0.05);
+            border-top-color: #3b82f6;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .btn-spinner {
+            width: 16px; height: 16px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            display: inline-block; flex-shrink: 0;
+        }
+        /* Skeleton shimmer para la tabla */
+        .skeleton {
+            background: linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.07) 50%, rgba(255,255,255,0.03) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.4s infinite;
+            border-radius: 0.5rem;
+        }
+        @keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
     </style>
 </head>
 <body class="selection:bg-blue-500/30 min-h-screen">
+
+    <!-- Loader de arranque -->
+    <div id="global-loader">
+        <img src="https://imagedelivery.net/ut8GNCA1obOu4JnXrJ_J9Q/e7b59903-06e0-48f8-1bb1-71bd6da8a800/public"
+             alt="Logo" class="w-28 opacity-80">
+        <div class="loader-ring"></div>
+        <p class="text-[10px] text-slate-600 uppercase tracking-[0.3em] font-bold">Cargando panel…</p>
+    </div>
 
     <nav class="p-4 lg:px-12 flex justify-between items-center border-b border-white/5 bg-slate-950/80 sticky top-0 z-50 backdrop-blur-md">
         <div class="flex items-center gap-4">
@@ -33,6 +76,7 @@
         <div class="flex items-center gap-8">
             <button onclick="switchTab('gestion')" id="btn-tab-gestion" class="text-xs font-bold uppercase tracking-widest tab-active pb-1">Gestión</button>
             <button onclick="switchTab('stock')" id="btn-tab-stock" class="text-xs font-bold uppercase tracking-widest text-slate-500 pb-1">Stock Tarjetas</button>
+            <button onclick="switchTab('productos')" id="btn-tab-productos" class="text-xs font-bold uppercase tracking-widest text-slate-500 pb-1">Productos</button>
         </div>
     </nav>
 
@@ -47,7 +91,10 @@
                     </div>
                     <div class="space-y-4">
                         <input id="buscarTarjeta" maxlength="8" placeholder="0000 0000" class="w-full p-4 rounded-xl bg-slate-900 border border-slate-800 text-center text-2xl font-bold tracking-[0.2em] outline-none focus:border-blue-600 transition-all text-white">
-                        <button onclick="buscarCliente()" class="w-full bg-blue-700 hover:bg-blue-600 p-4 rounded-xl font-bold uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-blue-900/20 text-sm">Validar Tarjeta</button>
+                        <button id="btnBuscar" onclick="buscarCliente()" class="w-full bg-blue-700 hover:bg-blue-600 p-4 rounded-xl font-bold uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-blue-900/20 text-sm flex items-center justify-center gap-2">
+                            <span id="btnBuscarText">Validar Tarjeta</span>
+                            <div id="btnBuscarSpinner" class="btn-spinner hidden"></div>
+                        </button>
                     </div>
                 </div>
 
@@ -133,33 +180,61 @@
                             <label class="text-[10px] uppercase font-bold text-slate-500 ml-2">Teléfono / WhatsApp</label>
                             <input id="nuevoTel" placeholder="Ej: 3644123456" class="w-full p-4 rounded-xl bg-slate-900 border border-slate-800 outline-none focus:border-blue-500 text-white transition-all">
                         </div>
-                        <button onclick="activarTarjeta()" class="w-full bg-blue-600 hover:bg-blue-500 p-4 rounded-xl font-bold uppercase tracking-widest transition-all mt-2 shadow-lg shadow-blue-900/30">Activar Tarjeta</button>
+                        <button id="btnActivar" onclick="activarTarjeta()" class="w-full bg-blue-600 hover:bg-blue-500 p-4 rounded-xl font-bold uppercase tracking-widest transition-all mt-2 shadow-lg shadow-blue-900/30 flex items-center justify-center gap-2">
+                            <span id="btnActivarText">Activar Tarjeta</span>
+                            <div id="btnActivarSpinner" class="btn-spinner hidden"></div>
+                        </button>
                     </div>
                 </div>
 
                 <div id="clienteAcciones" class="hidden space-y-8 animate-in fade-in duration-700">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div class="glass p-8 rounded-[2.5rem] border-emerald-500/10">
-                            <h3 class="text-lg font-bold uppercase italic mb-6 flex items-center gap-2">
-                                <span class="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-500 flex items-center justify-center text-sm">+</span>
+
+                        <!-- Cargar Compra -->
+                        <div class="glass p-8 rounded-[2.5rem] border border-emerald-500/10 space-y-4">
+                            <h3 class="text-lg font-bold uppercase italic flex items-center gap-2">
+                                <span class="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-500 flex items-center justify-center text-sm font-black">+</span>
                                 Cargar Compra
                             </h3>
-                            <div class="space-y-4">
-                                <input id="descripcion" placeholder="Motivo (ej: Compra Local)" class="w-full p-3 rounded-xl bg-slate-900/50 border border-slate-800 outline-none focus:border-emerald-500/50 transition-all text-sm text-white">
-                                <input id="puntosAgregar" type="number" placeholder="Puntos" class="w-full p-3 rounded-xl bg-slate-900/50 border border-slate-800 outline-none focus:border-emerald-500/50 transition-all text-sm font-bold text-white">
-                                <button onclick="agregarPuntos()" class="w-full bg-emerald-600 hover:bg-emerald-500 p-3 rounded-xl font-bold uppercase text-[10px] tracking-widest transition-all">Acreditar</button>
+                            <p class="text-[10px] text-slate-500 font-semibold uppercase -mt-2">Seleccioná el producto consumido</p>
+                            <select id="selectProductoAgregar" onchange="onSelectProductoAgregar()"
+                                class="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 outline-none focus:border-emerald-500/50 transition-all text-sm text-white appearance-none cursor-pointer">
+                                <option value="">Seleccioná un producto…</option>
+                            </select>
+                            <div id="previewPuntosAgregar" class="hidden flex items-center justify-between bg-emerald-500/5 border border-emerald-500/20 rounded-xl px-4 py-3">
+                                <span class="text-[10px] text-slate-400 uppercase font-bold">Puntos a acreditar</span>
+                                <span id="previewPuntosAgregarVal" class="font-black text-lg text-emerald-400"></span>
                             </div>
+                            <button id="btnAgregar" onclick="agregarPuntos()" class="w-full bg-emerald-600 hover:bg-emerald-500 p-3 rounded-xl font-bold uppercase text-[10px] tracking-widest transition-all flex items-center justify-center gap-2">
+                                <span id="btnAgregarText">Acreditar</span>
+                                <div id="btnAgregarSpinner" class="btn-spinner hidden"></div>
+                            </button>
                         </div>
-                        <div class="glass p-8 rounded-[2.5rem] border-rose-500/10">
-                            <h3 class="text-lg font-bold uppercase italic mb-6 flex items-center gap-2">
-                                <span class="w-8 h-8 rounded-lg bg-rose-500/20 text-rose-500 flex items-center justify-center text-sm">−</span>
+
+                        <!-- Registrar Canje -->
+                        <div class="glass p-8 rounded-[2.5rem] border border-rose-500/10 space-y-4">
+                            <h3 class="text-lg font-bold uppercase italic flex items-center gap-2">
+                                <span class="w-8 h-8 rounded-lg bg-rose-500/20 text-rose-500 flex items-center justify-center text-sm font-black">−</span>
                                 Registrar Canje
                             </h3>
-                            <div class="space-y-4">
-                                <input id="puntosRestar" type="number" placeholder="Puntos a descontar" class="w-full p-3 rounded-xl bg-slate-900/50 border border-slate-800 outline-none focus:border-rose-500/50 transition-all text-sm font-bold text-white">
-                                <button onclick="restarPuntos()" class="w-full bg-rose-600 hover:bg-rose-500 p-3 rounded-xl font-bold uppercase text-[10px] tracking-widest transition-all">Debitar</button>
+                            <p class="text-[10px] text-slate-500 font-semibold uppercase -mt-2">Seleccioná el premio que se canjea</p>
+                            <select id="selectProductoRestar" onchange="onSelectProductoRestar()"
+                                class="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 outline-none focus:border-rose-500/50 transition-all text-sm text-white appearance-none cursor-pointer">
+                                <option value="">Seleccioná un premio…</option>
+                            </select>
+                            <div id="previewPuntosRestar" class="hidden bg-rose-500/5 border border-rose-500/20 rounded-xl px-4 py-3 space-y-1">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-[10px] text-slate-400 uppercase font-bold">Puntos a descontar</span>
+                                    <span id="previewPuntosRestarVal" class="font-black text-lg text-rose-400"></span>
+                                </div>
+                                <p id="previewPuntosRestarAviso" class="text-[10px] text-amber-400 font-bold"></p>
                             </div>
+                            <button id="btnRestar" onclick="restarPuntos()" class="w-full bg-rose-600 hover:bg-rose-500 p-3 rounded-xl font-bold uppercase text-[10px] tracking-widest transition-all flex items-center justify-center gap-2">
+                                <span id="btnRestarText">Debitar</span>
+                                <div id="btnRestarSpinner" class="btn-spinner hidden"></div>
+                            </button>
                         </div>
+
                     </div>
                     <section>
                         <h3 class="text-lg font-bold uppercase italic mb-6 px-2">Historial</h3>
@@ -192,7 +267,10 @@
                 <input id="cantidadGenerar" type="number" placeholder="Ej: 50" class="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 outline-none focus:border-blue-500 text-white font-bold">
             </div>
             <div class="flex gap-2">
-                <button onclick="procesarGeneracion()" class="bg-blue-600 px-6 py-3 rounded-xl text-xs font-bold uppercase tracking-widest">Crear Números</button>
+                <button id="btnGenerar" onclick="procesarGeneracion()" class="bg-blue-600 px-6 py-3 rounded-xl text-xs font-bold uppercase tracking-widest flex items-center gap-2">
+                        <span id="btnGenerarText">Crear Números</span>
+                        <div id="btnGenerarSpinner" class="btn-spinner hidden"></div>
+                    </button>
                 <button onclick="ocultarGenerador()" class="bg-slate-800 px-6 py-3 rounded-xl text-xs font-bold uppercase tracking-widest">Cancelar</button>
             </div>
         </div>
@@ -235,11 +313,124 @@
 
     </div>
 
+    <!-- ══ SECCIÓN PRODUCTOS ══════════════════════════════════════ -->
+    <div id="section-productos" class="hidden space-y-6 animate-in fade-in duration-500" style="display:none !important">
+
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+                <h2 class="text-2xl font-black italic uppercase">Catálogo de Productos</h2>
+                <p class="text-xs text-slate-500 mt-1 font-medium">Definí los productos y sus puntos. El cliente los verá en su app.</p>
+            </div>
+            <button onclick="abrirFormProducto()" class="bg-blue-600 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-500 transition-all shadow-lg shadow-blue-900/20 flex items-center gap-2">
+                <span class="text-base leading-none">+</span> Nuevo Producto
+            </button>
+        </div>
+
+        <!-- Formulario inline -->
+        <div id="formProducto" class="hidden glass p-8 rounded-[2rem] border border-blue-500/20 animate-in slide-in-from-top-4 duration-300">
+            <div class="flex items-center justify-between mb-6">
+                <p id="tituloFormProd" class="text-sm font-black uppercase tracking-widest text-blue-400">Nuevo Producto</p>
+                <button onclick="cerrarFormProducto()" class="text-slate-500 hover:text-white text-xs font-bold bg-white/5 px-3 py-1.5 rounded-lg border border-white/5">✕ Cerrar</button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                <!-- Columna izquierda: datos -->
+                <div class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="space-y-1 col-span-2">
+                            <label class="text-[10px] uppercase font-bold text-slate-500 ml-1">Nombre del producto *</label>
+                            <input id="formProdNombre" placeholder="Ej: Blue Simple, Papas Grandes…"
+                                class="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 outline-none focus:border-blue-500 text-white text-sm transition-all">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-[10px] uppercase font-bold text-slate-500 ml-1">Categoría</label>
+                            <input id="formProdCategoria" placeholder="Ej: Hamburguesas…"
+                                class="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 outline-none focus:border-blue-500 text-white text-sm transition-all">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-[10px] uppercase font-bold text-slate-500 ml-1">Puntos *</label>
+                            <input id="formProdPuntos" type="number" placeholder="Ej: 250"
+                                class="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 outline-none focus:border-blue-500 text-white text-sm font-bold transition-all">
+                        </div>
+                        <div class="space-y-1 col-span-2">
+                            <label class="text-[10px] uppercase font-bold text-slate-500 ml-1">Tipo</label>
+                            <select id="formProdCanjeable"
+                                class="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 outline-none focus:border-blue-500 text-white text-sm transition-all appearance-none cursor-pointer">
+                                <option value="true">Suma Y canjeable (aparece en ambos paneles)</option>
+                                <option value="false">Solo suma puntos (no aparece en Canje)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button id="btnGuardarProd" onclick="guardarProducto()"
+                        class="w-full bg-blue-600 hover:bg-blue-500 p-3 rounded-xl font-bold uppercase text-[10px] tracking-widest transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-900/20">
+                        <span id="btnGuardarProdText">Guardar Producto</span>
+                        <div id="btnGuardarProdSpinner" class="btn-spinner hidden"></div>
+                    </button>
+                </div>
+
+                <!-- Columna derecha: imagen -->
+                <div class="space-y-3">
+                    <div class="space-y-1">
+                        <label class="text-[10px] uppercase font-bold text-slate-500 ml-1">URL de imagen</label>
+                        <input id="formProdImagen" type="url" placeholder="https://… (jpg, webp, png)"
+                            oninput="previewImagen()"
+                            class="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 outline-none focus:border-blue-500 text-white text-sm transition-all">
+                        <p class="text-[10px] text-slate-600 ml-1 italic">Pegá la URL directa de la foto del producto.</p>
+                    </div>
+                    <!-- Preview de imagen -->
+                    <div id="imgPreviewBox" class="w-full aspect-video rounded-2xl border border-white/5 bg-slate-900 overflow-hidden flex items-center justify-center">
+                        <span id="imgPreviewPlaceholder" class="text-slate-700 text-xs font-bold uppercase tracking-widest">Vista previa</span>
+                        <img id="imgPreview" src="" alt="Preview" class="hidden w-full h-full object-cover"
+                            onerror="this.classList.add('hidden'); document.getElementById('imgPreviewPlaceholder').classList.remove('hidden')">
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Grid de productos -->
+        <div id="listaProductos" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"></div>
+
+    </div>
+
     </main>
+
+    <!-- ══ MODAL PIN DUEÑO ══════════════════════════════════════ -->
+    <div id="modalPin" class="hidden fixed inset-0 z-[99998] flex items-center justify-center p-6" style="background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);">
+        <div class="glass rounded-[2rem] p-10 w-full max-w-sm space-y-6 border border-blue-500/20 animate-in zoom-in duration-300" style="background:rgba(5,5,8,0.95);">
+            <div class="text-center space-y-2">
+                <div class="w-14 h-14 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-2xl mx-auto">🔐</div>
+                <h2 class="text-lg font-black uppercase italic tracking-tighter">Acceso Restringido</h2>
+                <p class="text-xs text-slate-500 font-medium">Esta sección es solo para el administrador.</p>
+            </div>
+
+            <div class="space-y-3">
+                <label class="text-[10px] uppercase font-bold text-slate-500 ml-1">PIN de acceso</label>
+                <input id="pinInput" type="password" maxlength="8" placeholder="••••••••"
+                    oninput="limpiarErrorPin()"
+                    onkeydown="if(event.key==='Enter') verificarPin()"
+                    class="w-full p-4 rounded-xl bg-slate-900 border border-slate-800 text-center text-2xl font-bold tracking-[0.4em] outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10 transition-all text-white placeholder:text-slate-800">
+                <p id="pinError" class="hidden text-[11px] text-rose-400 font-bold text-center">PIN incorrecto. Intentá de nuevo.</p>
+            </div>
+
+            <div class="flex gap-3">
+                <button onclick="cerrarModalPin()" class="flex-1 bg-white/5 hover:bg-white/10 p-3 rounded-xl font-bold text-xs uppercase tracking-widest text-slate-400 transition-all border border-white/5">
+                    Cancelar
+                </button>
+                <button onclick="verificarPin()" class="flex-1 bg-blue-600 hover:bg-blue-500 p-3 rounded-xl font-bold text-xs uppercase tracking-widest transition-all shadow-lg shadow-blue-900/20 flex items-center justify-center gap-2">
+                    <span id="pinBtnText">Ingresar</span>
+                    <div id="pinBtnSpinner" class="btn-spinner hidden"></div>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
     <script src="db.js"></script>
     <script src="admin.js"></script>
-
     <!-- Toast container -->
     <div id="toast-container" style="position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);z-index:9999;display:flex;flex-direction:column;gap:0.75rem;align-items:center;pointer-events:none;"></div>
 
