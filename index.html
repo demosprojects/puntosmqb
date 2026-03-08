@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Más Que Puntos | Club de Beneficios</title>
+     <link rel="icon" href="https://imagedelivery.net/ut8GNCA1obOu4JnXrJ_J9Q/e7b59903-06e0-48f8-1bb1-71bd6da8a800/public" type="image/x-icon">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
     <style>
@@ -102,6 +103,34 @@
         @keyframes toastIn  { from { opacity:0; transform:translateY(20px) scale(0.95); } to { opacity:1; transform:translateY(0) scale(1); } }
         @keyframes toastOut { from { opacity:1; transform:translateY(0) scale(1); } to { opacity:0; transform:translateY(10px) scale(0.95); } }
 
+        /* ── Loader overlay ── */
+        #global-loader {
+            position: fixed; inset: 0; z-index: 99999;
+            background: #050508;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center; gap: 2rem;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+        #global-loader.hidden-loader { opacity: 0; visibility: hidden; pointer-events: none; }
+        .loader-ring {
+            width: 52px; height: 52px;
+            border: 3px solid rgba(255,255,255,0.05);
+            border-top-color: #3b82f6;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Spinner inline para el botón */
+        .btn-spinner {
+            width: 18px; height: 18px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            flex-shrink: 0;
+        }
+
         /* Chip Plateado */
         .card-chip {
             width: 50px;
@@ -119,6 +148,14 @@
     </style>
 </head>
 <body class="selection:bg-blue-500/30">
+
+    <!-- Loader de arranque -->
+    <div id="global-loader">
+        <img src="https://imagedelivery.net/ut8GNCA1obOu4JnXrJ_J9Q/e7b59903-06e0-48f8-1bb1-71bd6da8a800/public"
+             alt="Logo" class="w-28 opacity-80 drop-shadow-[0_0_20px_rgba(37,99,235,0.4)]">
+        <div class="loader-ring"></div>
+        <p class="text-[10px] text-slate-600 uppercase tracking-[0.3em] font-bold">Conectando…</p>
+    </div>
 
     <div id="loginSection" class="min-h-screen flex items-center justify-center p-6">
     <div class="w-full max-w-sm text-center space-y-8 animate-in fade-in zoom-in duration-700">
@@ -154,12 +191,13 @@
                 </p>
             </div>
 
-            <button onclick="login()" 
+            <button id="loginBtn" onclick="login()" 
                     class="w-full bg-blue-700 hover:bg-blue-600 p-5 rounded-2xl font-bold text-lg shadow-xl shadow-blue-900/20 uppercase tracking-widest transition-all active:scale-95 flex items-center justify-center gap-3 group">
-                <span>Ver mis beneficios</span>
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <span id="loginBtnText">Ver mis beneficios</span>
+                <svg id="loginBtnArrow" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
                 </svg>
+                <div id="loginBtnSpinner" class="btn-spinner hidden"></div>
             </button>
         </div>
 
@@ -256,6 +294,10 @@
     <!-- Toast container -->
     <div id="toast-container"></div>
 
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
+    <script src="db.js"></script>
     <script src="app.js"></script>
     <script>
         // Sistema de Toast Notifications
