@@ -353,8 +353,107 @@ function renderStock() {
                 <td class="p-5 text-slate-300 font-bold text-sm">${u.nombre || '—'}</td>
                 <td class="p-5 text-slate-500 font-mono text-sm">${u.telefono || '—'}</td>
                 <td class="p-5 font-black text-sm">${u.puntos}</td>
+                <td class="p-5">
+                    <button onclick="abrirModalEditar('${u.tarjeta}')"
+                        class="opacity-0 group-hover:opacity-100 transition-opacity px-3 py-1.5 rounded-lg bg-white/5 hover:bg-blue-500/10 hover:text-blue-400 text-slate-500 text-[10px] font-bold border border-white/5 transition-all">
+                        Editar
+                    </button>
+                </td>
             </tr>`;
     });
+}
+
+// ── Modal Editar Tarjeta ───────────────────────────────────
+let tarjetaEditandoActual = null;
+
+function abrirModalEditar(tarjeta) {
+    const u = usuarios.find(x => x.tarjeta === tarjeta);
+    if (!u) return;
+    tarjetaEditandoActual = tarjeta;
+
+    // Datos básicos
+    document.getElementById('modalEditarNumero').textContent = tarjeta.replace(/(\d{4})(\d{4})/, '$1 $2');
+    document.getElementById('editNombre').value   = u.nombre   || '';
+    document.getElementById('editTelefono').value = u.telefono || '';
+
+    // Último movimiento
+    const historial = u.historial || [];
+    if (historial.length > 0) {
+        const ultimo = historial[historial.length - 1];
+        const esSuma = ultimo.puntos > 0;
+
+        document.getElementById('editMovDescripcion').textContent = ultimo.descripcion;
+        document.getElementById('editMovFecha').textContent       = ultimo.fecha;
+        document.getElementById('editMovPuntos').textContent      = `${esSuma ? '+' : ''}${ultimo.puntos}`;
+        document.getElementById('editMovPuntos').className        = `font-black text-lg ${esSuma ? 'text-emerald-400' : 'text-rose-400'}`;
+
+        const icono = document.getElementById('editMovIcono');
+        icono.textContent  = esSuma ? '↑' : '↓';
+        icono.className    = `w-9 h-9 rounded-full flex items-center justify-center text-sm ${esSuma ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'}`;
+
+        document.getElementById('editUltimoMov').classList.remove('hidden');
+        document.getElementById('editSinMov').classList.add('hidden');
+    } else {
+        document.getElementById('editUltimoMov').classList.add('hidden');
+        document.getElementById('editSinMov').classList.remove('hidden');
+    }
+
+    document.getElementById('modalEditarTarjeta').classList.remove('hidden');
+    document.getElementById('editNombre').focus();
+}
+
+function cerrarModalEditar() {
+    document.getElementById('modalEditarTarjeta').classList.add('hidden');
+    tarjetaEditandoActual = null;
+}
+
+async function guardarEdicionTarjeta() {
+    const nombre   = document.getElementById('editNombre').value.trim();
+    const telefono = document.getElementById('editTelefono').value.trim();
+    if (!nombre || !telefono) { showToast('Completá nombre y teléfono.', 'warn'); return; }
+
+    setBtnLoading('btnGuardarEdit', 'btnGuardarEditText', 'btnGuardarEditSpinner', true, 'Guardar Cambios');
+
+    const idx = usuarios.findIndex(u => u.tarjeta === tarjetaEditandoActual);
+    usuarios[idx] = { ...usuarios[idx], nombre, telefono };
+    await updateUsuario(usuarios[idx]);
+
+    setBtnLoading('btnGuardarEdit', 'btnGuardarEditText', 'btnGuardarEditSpinner', false, 'Guardar Cambios');
+    showToast('Datos actualizados correctamente.', 'success');
+    cerrarModalEditar();
+    renderStock();
+}
+
+async function anularUltimoMovimiento() {
+    const u = usuarios.find(x => x.tarjeta === tarjetaEditandoActual);
+    if (!u || !u.historial || u.historial.length === 0) return;
+
+    const ultimo = u.historial[u.historial.length - 1];
+
+    // No permitir anular una anulación
+    if (ultimo.descripcion.startsWith('Anulación:')) {
+        showToast('No se puede anular una anulación.', 'warn');
+        return;
+    }
+
+    if (!confirm(`¿Anular "${ultimo.descripcion}" (${ultimo.puntos > 0 ? '+' : ''}${ultimo.puntos} pts)?`)) return;
+
+    setBtnLoading('btnAnular', 'btnAnularText', 'btnAnularSpinner', true, 'Anular');
+
+    const puntosRevertidos = -ultimo.puntos;
+    u.puntos += puntosRevertidos;
+    u.historial.push({
+        fecha: new Date().toISOString().split('T')[0],
+        descripcion: `Anulación: ${ultimo.descripcion}`,
+        puntos: puntosRevertidos
+    });
+
+    await updateUsuario(u);
+
+    setBtnLoading('btnAnular', 'btnAnularText', 'btnAnularSpinner', false, 'Anular');
+    showToast(`Movimiento anulado. Puntos ajustados a ${u.puntos}.`, 'success');
+    cerrarModalEditar();
+    renderStock();
 }
 
 function mostrarGenerador() { document.getElementById("generadorLote").classList.remove("hidden"); }
