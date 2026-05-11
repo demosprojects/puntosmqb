@@ -1,4 +1,31 @@
 let usuarioActual = null;
+let messageTimeout;
+
+// ── Sistema de Avisos Integrado ──
+function showInlineMessage(message, type = 'error') {
+    const msgDiv = document.getElementById('loginMessage');
+    if (!msgDiv) return;
+    
+    // Limpiamos clases anteriores y el timeout
+    msgDiv.classList.remove('hidden', 'bg-rose-500/10', 'border-rose-500/30', 'text-rose-400', 'bg-amber-500/10', 'border-amber-500/30', 'text-amber-400', 'bg-emerald-500/10', 'border-emerald-500/30', 'text-emerald-400');
+    clearTimeout(messageTimeout);
+    
+    // Asignamos colores según el tipo de aviso
+    if (type === 'error') {
+        msgDiv.classList.add('bg-rose-500/10', 'border-rose-500/30', 'text-rose-400');
+    } else if (type === 'warn') {
+        msgDiv.classList.add('bg-amber-500/10', 'border-amber-500/30', 'text-amber-400');
+    } else if (type === 'success') {
+        msgDiv.classList.add('bg-emerald-500/10', 'border-emerald-500/30', 'text-emerald-400');
+    }
+    
+    msgDiv.textContent = message;
+    
+    // Lo ocultamos a los 4 segundos
+    messageTimeout = setTimeout(() => {
+        msgDiv.classList.add('hidden');
+    }, 4000);
+}
 
 // ── Helpers de UI ──────────────────────────────────────────
 function showLoader()  { document.getElementById('global-loader')?.classList.remove('hidden-loader'); }
@@ -17,7 +44,7 @@ function setLoginLoading(loading) {
     arrow?.classList.toggle('hidden', loading);
     spinner?.classList.toggle('hidden', !loading);
     if (loading) text.textContent = '';
-    else text.textContent = 'Ver mis beneficios';
+    else text.textContent = 'Ingresar';
 }
 
 // Configuración de premios — se carga dinámicamente desde Firebase
@@ -35,9 +62,10 @@ window.onload = async () => {
             .filter(p => p.canjeable !== false)
             .sort((a, b) => a.puntos - b.puntos);
         
-        const tarjetaGuardada = localStorage.getItem('puntos_user_tarjeta');
-        if (tarjetaGuardada) {
-            await iniciarConTarjeta(tarjetaGuardada);
+        // Buscamos si ya hay un PIN guardado de una sesión anterior
+        const pinGuardado = localStorage.getItem('puntos_user_pin');
+        if (pinGuardado) {
+            await iniciarConPin(pinGuardado);
         }
     } catch (e) {
         console.error("Error al conectar con Firebase.", e);
@@ -51,44 +79,50 @@ window.onload = async () => {
 };
 
 async function login() {
-    const tarjeta = document.getElementById("tarjetaInput").value.replace(/\s+/g, '');
-    if (tarjeta.length === 0) return;
+    // Tomamos el PIN del input
+    const pin = document.getElementById("tarjetaInput").value.trim();
+    if (pin.length === 0) return;
+    
     setLoginLoading(true);
-    await iniciarConTarjeta(tarjeta);
+    await iniciarConPin(pin);
     setLoginLoading(false);
 }
 
-async function iniciarConTarjeta(numTarjeta) {
-    // Usamos getUsuario() para ir a buscar la tarjeta DIRECTO a Firebase
-    const user = await getUsuario(numTarjeta);
+async function iniciarConPin(pin) {
+    // Usamos la nueva función para ir a buscar al usuario por su PIN
+    const user = await getUsuarioByPin(pin);
 
     if (user) {
         // Verificamos que la tarjeta ya haya sido activada por el admin
         if (!user.asignada) {
-            showToast("Esta tarjeta es válida pero aún no fue activada en el local.", "warn");
+            showInlineMessage("Esta cuenta no está activa.", "warn");
             return;
         }
 
         usuarioActual = user;
-        localStorage.setItem('puntos_user_tarjeta', numTarjeta);
+        // Guardamos el PIN en la memoria del navegador para no pedirlo de nuevo
+        localStorage.setItem('puntos_user_pin', pin);
         
         document.getElementById("loginSection").classList.add("hidden");
         document.getElementById("appSection").classList.remove("hidden");
         
         renderAll();
     } else {
-        showToast("La tarjeta ingresada no existe.", "error");
+        showInlineMessage("El PIN ingresado es incorrecto o no existe.", "error");
     }
 }
 
 function logout() {
-    localStorage.removeItem('puntos_user_tarjeta');
+    // Borramos el PIN de la memoria al salir
+    localStorage.removeItem('puntos_user_pin');
     location.reload();
 }
 
 function renderAll() {
     document.getElementById("userName").innerText = usuarioActual.nombre;
     document.getElementById("userPoints").innerText = usuarioActual.puntos.toLocaleString();
+    
+    // Seguimos mostrando el número de tarjeta virtual como parte de la estética de la credencial
     document.getElementById("cardNumberDisplay").innerText = usuarioActual.tarjeta.replace(/(\d{4})(\d{4})/, '$1 $2');
 
     renderProgreso();
@@ -147,7 +181,7 @@ function renderPremios() {
                         ? "bg-blue-600 shadow-lg shadow-blue-600/20 text-white"
                         : "bg-slate-800 text-slate-500 opacity-40 cursor-not-allowed"
                     }">
-                        ${puede ? "¡Podés canjear!" : "Faltan pts"}
+                        ${puede ? "¡Podés canjear!" : "Te faltan pts"}
                     </button>
                 </div>
             </div>
