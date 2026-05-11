@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acceso Admin | Más Que Burgers</title>
+    <link rel="icon" href="https://imagedelivery.net/ut8GNCA1obOu4JnXrJ_J9Q/e7b59903-06e0-48f8-1bb1-71bd6da8a800/public" type="image/x-icon">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #050508; color: #f8fafc; overflow-x: hidden; }
+        
+        /* Glassmorphism */
+        .glass { 
+            background: rgba(255, 255, 255, 0.02); 
+            backdrop-filter: blur(12px); 
+            border: 1px solid rgba(255, 255, 255, 0.08); 
+        }
+
+        /* Loader global */
+        #global-loader {
+            position: fixed; inset: 0; z-index: 99999;
+            background: #050508;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center; gap: 2rem;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+        #global-loader.hidden-loader { opacity: 0; visibility: hidden; pointer-events: none; }
+        .loader-ring {
+            width: 52px; height: 52px;
+            border: 3px solid rgba(255,255,255,0.05);
+            border-top-color: #3b82f6;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        
+        /* Spinner del botón */
+        .btn-spinner {
+            width: 18px; height: 18px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            flex-shrink: 0;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Fondo decorativo */
+        .bg-glow {
+            position: absolute; width: 600px; height: 600px;
+            background: radial-gradient(circle, rgba(37,99,235,0.1) 0%, transparent 70%);
+            border-radius: 50%; top: 50%; left: 50%;
+            transform: translate(-50%, -50%); pointer-events: none; z-index: -1;
+        }
+    </style>
+</head>
+<body class="selection:bg-blue-500/30 relative">
+
+    <div class="bg-glow"></div>
+
+    <div id="global-loader">
+        <img src="https://imagedelivery.net/ut8GNCA1obOu4JnXrJ_J9Q/e7b59903-06e0-48f8-1bb1-71bd6da8a800/public" alt="Logo" class="w-28 opacity-80 drop-shadow-[0_0_20px_rgba(37,99,235,0.4)]">
+        <div class="loader-ring"></div>
+    </div>
+
+    <div class="min-h-screen flex items-center justify-center p-6 relative z-10">
+        
+        <div class="glass p-10 rounded-[2.5rem] w-full max-w-md border-blue-500/20 shadow-2xl animate-in zoom-in duration-700">
+            
+            <div class="text-center space-y-4 mb-8">
+                <div class="mx-auto flex items-center justify-center mb-6">
+                    <img src="https://imagedelivery.net/ut8GNCA1obOu4JnXrJ_J9Q/e7b59903-06e0-48f8-1bb1-71bd6da8a800/public" alt="Logo Más Que Burgers" class="h-16 w-auto drop-shadow-[0_0_15px_rgba(37,99,235,0.4)]">
+                </div>
+                <h1 class="text-2xl font-black uppercase italic tracking-tighter">Panel de Gestión</h1>
+                <p class="text-xs text-slate-400 font-medium">Ingresá tus credenciales para administrar el sistema.</p>
+            </div>
+
+            <div class="space-y-5">
+                
+                <div class="space-y-1.5">
+                    <label class="text-[10px] uppercase font-bold text-slate-500 tracking-widest ml-1">Usuario / Email</label>
+                    <input id="adminEmail" type="text" placeholder="ejemplo@masqueburgers.com" onkeydown="if(event.key==='Enter') document.getElementById('adminPass').focus()"
+                           class="w-full p-4 rounded-xl bg-slate-900 border border-slate-800 text-sm font-bold outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10 transition-all text-white placeholder:text-slate-700">
+                </div>
+
+                <div class="space-y-1.5 relative">
+                    <label class="text-[10px] uppercase font-bold text-slate-500 tracking-widest ml-1">Contraseña</label>
+                    <div class="relative">
+                        <input id="adminPass" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter') loginAdmin()"
+                               class="w-full p-4 pr-12 rounded-xl bg-slate-900 border border-slate-800 text-sm font-bold tracking-widest outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10 transition-all text-white placeholder:text-slate-700">
+                        
+                        <button type="button" onclick="togglePassword()" class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-blue-400 transition-colors">
+                            <svg id="iconOjoCerrado" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19M1 1l22 22" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            <svg id="iconOjoAbierto" class="hidden" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="loginMessage" class="hidden w-full p-3 rounded-xl border text-xs font-bold text-center transition-all animate-in fade-in zoom-in duration-300"></div>
+
+                <button id="btnLogin" onclick="loginAdmin()" 
+                        class="w-full bg-blue-700 hover:bg-blue-600 p-4 rounded-xl font-bold uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-blue-900/20 text-xs flex items-center justify-center gap-2 mt-6">
+                    <span id="btnLoginText">Ingresar al Sistema</span>
+                    <div id="btnLoginSpinner" class="btn-spinner hidden"></div>
+                </button>
+
+            </div>
+            
+            <div class="mt-8 pt-6 border-t border-white/5 text-center">
+                <p class="text-[11px] text-slate-500 font-medium">
+                    ¿Olvidaste tu contraseña? <br class="sm:hidden">
+                    <a href="https://wa.me/+5493644539325" target="_blank" class="text-blue-400 hover:text-blue-300 transition-colors underline-offset-4 hover:underline">
+  Contactá con soporte
+</a>
+                </p>
+            </div>
+
+        </div>
+    </div>
+    
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    
+    <script src="db.js"></script>
+    <script src="login.js"></script>
+
+</body>
+</html>
