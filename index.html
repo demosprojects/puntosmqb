@@ -3,125 +3,77 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Más Que Puntos | Club de Beneficios</title>
-     <link rel="icon" href="https://imagedelivery.net/ut8GNCA1obOu4JnXrJ_J9Q/e7b59903-06e0-48f8-1bb1-71bd6da8a800/public" type="image/x-icon">
+    <title>Más que Burgers</title>
+    <link rel="icon" href="https://imagedelivery.net/ut8GNCA1obOu4JnXrJ_J9Q/e7b59903-06e0-48f8-1bb1-71bd6da8a800/public" type="image/x-icon">
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,700;0,800;1,700;1,800&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --blue: #2563eb;
+            --blue-glow: rgba(37,99,235,0.35);
+            --amber: #f59e0b;
+            --emerald: #10b981;
+        }
+
+        * { box-sizing: border-box; }
         body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #050508; color: #f8fafc; overflow-x: hidden; }
-        
-        /* Glassmorphism General */
-        .glass { 
-            background: rgba(255, 255, 255, 0.02); 
-            backdrop-filter: blur(12px); 
-            border: 1px solid rgba(255, 255, 255, 0.08); 
+        ::selection { background: rgba(37,99,235,0.35); }
+
+        .glass {
+            background: rgba(255,255,255,0.025);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255,255,255,0.08);
         }
 
-        /* Contenedor para el efecto 3D */
-        .card-container {
-            perspective: 1200px;
-            width: 100%;
-        }
-
-        /* Estética Black Card Premium */
-        .card-premium {
-            background: linear-gradient(145deg, #111827 0%, #020617 100%);
-            box-shadow: 0 40px 80px -15px rgba(0, 0, 0, 0.9);
-            transform-style: preserve-3d;
-            transition: transform 0.1s ease-out;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            position: relative;
-            overflow: hidden;
-        }
-
-        /* Textura de material */
-        .card-premium::before {
-            content: "";
-            position: absolute;
-            inset: 0;
-            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3BaseYFilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/baseYFilter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-            opacity: 0.05;
-            mix-blend-mode: overlay;
-            pointer-events: none;
-        }
-
-        /* Brillo dinámico */
-        .card-glare {
-            position: absolute;
-            inset: 0;
-            background: radial-gradient(circle at var(--x) var(--y), rgba(255,255,255,0.05) 0%, transparent 60%);
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-        .card-premium:hover .card-glare { opacity: 1; }
-
-        /* Toast Notifications */
-        #toast-container {
-            position: fixed;
-            bottom: 1.5rem;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 9999;
-            display: flex;
-            flex-direction: column;
-            gap: 0.75rem;
-            align-items: center;
-            pointer-events: none;
-        }
-        .toast {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            padding: 1rem 1.5rem;
-            border-radius: 1.5rem;
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            font-size: 0.875rem;
-            font-weight: 600;
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            pointer-events: all;
-            min-width: 260px;
-            max-width: 380px;
-            box-shadow: 0 25px 50px -10px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.06);
-            animation: toastIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-        }
-        .toast.removing {
-            animation: toastOut 0.3s ease-in forwards;
-        }
-        .toast-error   { background: rgba(220,38,38,0.15);  border: 1px solid rgba(239,68,68,0.3);    color: #fca5a5; }
-        .toast-success { background: rgba(5,150,105,0.15);  border: 1px solid rgba(16,185,129,0.3);   color: #6ee7b7; }
-        .toast-info    { background: rgba(37,99,235,0.15);  border: 1px solid rgba(59,130,246,0.3);   color: #93c5fd; }
-        .toast-icon {
-            width: 2rem; height: 2rem; border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            flex-shrink: 0; font-size: 1rem;
-        }
-        .toast-error .toast-icon   { background: rgba(239,68,68,0.2); }
-        .toast-success .toast-icon { background: rgba(16,185,129,0.2); }
-        .toast-info .toast-icon    { background: rgba(59,130,246,0.2); }
-        @keyframes toastIn  { from { opacity:0; transform:translateY(20px) scale(0.95); } to { opacity:1; transform:translateY(0) scale(1); } }
-        @keyframes toastOut { from { opacity:1; transform:translateY(0) scale(1); } to { opacity:0; transform:translateY(10px) scale(0.95); } }
-
-        /* ── Loader overlay ── */
+        /* LOADER */
         #global-loader {
             position: fixed; inset: 0; z-index: 99999;
             background: #050508;
             display: flex; flex-direction: column;
             align-items: center; justify-content: center; gap: 2rem;
-            transition: opacity 0.5s ease, visibility 0.5s ease;
+            transition: opacity 0.6s ease, visibility 0.6s ease;
         }
         #global-loader.hidden-loader { opacity: 0; visibility: hidden; pointer-events: none; }
         .loader-ring {
-            width: 52px; height: 52px;
-            border: 3px solid rgba(255,255,255,0.05);
-            border-top-color: #3b82f6;
+            width: 44px; height: 44px;
+            border: 2px solid rgba(255,255,255,0.06);
+            border-top-color: var(--blue);
             border-radius: 50%;
             animation: spin 0.8s linear infinite;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* Spinner inline para el botón */
+        /* CARD 3D */
+        .card-container { perspective: 1200px; width: 100%; }
+        .card-premium {
+            background: linear-gradient(145deg, #111827 0%, #020617 100%);
+            box-shadow: 0 40px 80px -15px rgba(0,0,0,0.9);
+            transform-style: preserve-3d;
+            transition: transform 0.12s ease-out;
+            border: 1px solid rgba(255,255,255,0.1);
+            position: relative; overflow: hidden;
+        }
+        .card-premium::before {
+            content: ""; position: absolute; inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+            opacity: 0.05; mix-blend-mode: overlay; pointer-events: none;
+        }
+        .card-glare {
+            position: absolute; inset: 0;
+            background: radial-gradient(circle at var(--x,50%) var(--y,50%), rgba(255,255,255,0.06) 0%, transparent 65%);
+            pointer-events: none; opacity: 0; transition: opacity 0.3s;
+        }
+        .card-premium:hover .card-glare { opacity: 1; }
+        .card-chip {
+            width: 44px; height: 33px;
+            background: linear-gradient(135deg,#94a3b8 0%,#cbd5e1 50%,#64748b 100%);
+            border-radius: 6px;
+            box-shadow: inset 0 1px 2px rgba(255,255,255,0.8), 0 2px 5px rgba(0,0,0,0.5);
+            transform: translateZ(30px);
+        }
+        .text-3d { transform: translateZ(50px); }
+        .logo-3d { transform: translateZ(60px); }
+
         .btn-spinner {
             width: 18px; height: 18px;
             border: 2px solid rgba(255,255,255,0.3);
@@ -131,220 +83,543 @@
             flex-shrink: 0;
         }
 
-        /* Chip Plateado */
-        .card-chip {
-            width: 50px;
-            height: 38px;
-            background: linear-gradient(135deg, #94a3b8 0%, #cbd5e1 50%, #64748b 100%);
-            border-radius: 8px;
-            position: relative;
-            box-shadow: inset 0 1px 2px rgba(255,255,255,0.8), 0 2px 5px rgba(0,0,0,0.5);
-            transform: translateZ(30px);
+        .progress-fill {
+            background: linear-gradient(90deg, var(--blue) 0%, var(--emerald) 100%);
+            box-shadow: 0 0 14px var(--blue-glow);
+            transition: width 1.2s cubic-bezier(.22,1,.36,1);
         }
 
-        /* Elevación 3D de elementos */
-        .text-3d { transform: translateZ(50px); }
-        .logo-3d { transform: translateZ(60px); }
+        /* BADGE NIVEL — sin bronce */
+        .badge-nivel {
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 3px 10px; border-radius: 999px;
+            font-size: 9px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase;
+            border: 1px solid;
+        }
+        .badge-plata    { color: #cbd5e1; border-color: #cbd5e155; background: rgba(203,213,225,0.08); }
+        .badge-oro      { color: var(--amber); border-color: #f59e0b55; background: rgba(245,158,11,0.08); }
+        .badge-diamante { color: #60a5fa; border-color: #60a5fa55; background: rgba(96,165,250,0.08); }
+
+        @keyframes pulse-ring {
+            0%   { box-shadow: 0 0 0 0 var(--blue-glow); }
+            70%  { box-shadow: 0 0 0 7px transparent; }
+            100% { box-shadow: 0 0 0 0 transparent; }
+        }
+        .badge-pulse { animation: pulse-ring 2.5s infinite; }
+
+        /* HISTORIAL */
+        .historial-item { overflow: hidden; }
+        .historial-item.hidden-item { display: none; }
+
+        .ver-mas-btn {
+            display: flex; align-items: center; justify-content: center; gap: 7px;
+            width: 100%; padding: 12px;
+            font-size: 10px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase;
+            color: #64748b;
+            border-top: 1px solid rgba(255,255,255,0.05);
+            transition: color 0.2s, background 0.2s;
+            cursor: pointer; background: none; border-left: none; border-right: none; border-bottom: none;
+        }
+        .ver-mas-btn:hover { color: #94a3b8; background: rgba(255,255,255,0.02); }
+        .ver-mas-btn svg { transition: transform 0.3s; }
+        .ver-mas-btn.expanded svg { transform: rotate(180deg); }
+
+        /* PASOS */
+        .paso-num {
+            width: 28px; height: 28px; flex-shrink: 0;
+            border-radius: 50%;
+            background: rgba(37,99,235,0.12);
+            border: 1px solid rgba(37,99,235,0.3);
+            color: var(--blue);
+            font-weight: 900; font-size: 11px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .paso-conector {
+            width: 1px; height: 16px;
+            background: linear-gradient(to bottom, rgba(37,99,235,0.3), transparent);
+            margin-left: 13px;
+        }
+
+        /* ANIMACIONES */
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(14px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .anim-fadein { animation: fadeUp 0.5s ease both; }
+        .delay-1 { animation-delay: 0.07s; }
+        .delay-2 { animation-delay: 0.14s; }
+        .delay-3 { animation-delay: 0.21s; }
+
+        /* SALUDO CHIP */
+        .saludo-chip {
+            display: inline-flex; align-items: center; gap: 7px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 999px;
+            padding: 4px 12px;
+            font-size: 10px; font-weight: 700; color: #94a3b8;
+        }
+        .hora-dot {
+            width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
+            background: var(--emerald);
+            box-shadow: 0 0 7px rgba(16,185,129,0.7);
+            display: inline-block;
+        }
+
+        /* MOVIMIENTOS BADGE */
+        .movimientos-badge {
+            display: inline-flex; align-items: center; gap: 5px;
+            font-size: 10px; font-weight: 700; color: #64748b;
+            border-radius: 8px; padding: 4px 9px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+
+        /* VER PIN */
+        .pin-row {
+            display: flex; align-items: center; gap: 6px; margin-top: 2px;
+        }
+        .pin-dots {
+            font-family: monospace; letter-spacing: 0.22em;
+            font-size: 10px; color: rgba(255,255,255,0.22); user-select: none;
+        }
+        .pin-value {
+            font-family: monospace; letter-spacing: 0.22em;
+            font-size: 10px; color: #60a5fa; display: none;
+        }
+        .pin-btn {
+            background: none; border: none; padding: 2px; cursor: pointer;
+            color: rgba(255,255,255,0.2); transition: color 0.2s;
+            display: flex; align-items: center;
+            -webkit-tap-highlight-color: transparent;
+            line-height: 0;
+        }
+        .pin-btn:hover { color: rgba(255,255,255,0.5); }
+        .pin-btn.active { color: #60a5fa; }
     </style>
 </head>
-<body class="selection:bg-blue-500/30">
+<body>
 
-    <!-- Loader de arranque -->
-    <div id="global-loader">
+<!-- LOADER -->
+<div id="global-loader">
+    <img src="https://imagedelivery.net/ut8GNCA1obOu4JnXrJ_J9Q/e7b59903-06e0-48f8-1bb1-71bd6da8a800/public"
+         alt="Logo" class="w-20 opacity-80 drop-shadow-[0_0_20px_rgba(37,99,235,0.4)]">
+    <div class="loader-ring"></div>
+    <p class="text-[10px] text-slate-600 uppercase tracking-[0.3em] font-bold">Verificando cuenta</p>
+</div>
+
+<!-- LOGIN -->
+<div id="loginSection" class="min-h-screen flex items-center justify-center p-4">
+    <div class="w-full max-w-xs text-center space-y-5 anim-fadein">
         <img src="https://imagedelivery.net/ut8GNCA1obOu4JnXrJ_J9Q/e7b59903-06e0-48f8-1bb1-71bd6da8a800/public"
-             alt="Logo" class="w-28 opacity-80 drop-shadow-[0_0_20px_rgba(37,99,235,0.4)]">
-        <div class="loader-ring"></div>
-        <p class="text-[10px] text-slate-600 uppercase tracking-[0.3em] font-bold">Conectando…</p>
-    </div>
+             alt="Logo Más Que Burgers"
+             class="w-32 sm:w-40 mx-auto drop-shadow-[0_0_24px_rgba(37,99,235,0.45)]">
 
-    <div id="loginSection" class="min-h-screen flex items-center justify-center p-6">
-    <div class="w-full max-w-sm text-center space-y-8 animate-in fade-in zoom-in duration-700">
-        
+        <p class="text-slate-400 text-xs font-medium px-2">
+            Ingresá tu <span class="text-blue-400 font-bold">PIN de 4 dígitos</span> para consultar tus puntos y canjear premios.
+        </p>
+
         <div class="space-y-4">
-            <img src="https://imagedelivery.net/ut8GNCA1obOu4JnXrJ_J9Q/e7b59903-06e0-48f8-1bb1-71bd6da8a800/public" 
-                 alt="Logo Más Que Burgers" 
-                 class="w-48 mx-auto drop-shadow-[0_0_20px_rgba(37,99,235,0.4)]">
-            
-            <div class="space-y-2">
-                <h1 class="text-3xl font-black italic uppercase tracking-tighter">Club de Puntos</h1>
-                <p class="text-slate-400 text-sm font-medium px-4">
-                    Ingresá los <span class="text-blue-400 font-bold">8 números</span> de tu tarjeta para consultar tus puntos y canjear premios.
-                </p>
-            </div>
-        </div>
-
-        <div class="space-y-6">
             <div class="relative group">
-                <label for="tarjetaInput" class="block text-[10px] uppercase tracking-[0.3em] text-slate-500 font-bold mb-3 transition-colors group-focus-within:text-blue-500">
-                    Número de Tarjeta
+                <label for="tarjetaInput" class="block text-[10px] uppercase tracking-[0.3em] text-slate-500 font-bold mb-2.5 transition-colors group-focus-within:text-blue-500">
+                    PIN de Acceso
                 </label>
-                
-                <input id="tarjetaInput" 
-                       type="tel" 
-                       maxlength="8" 
-                       placeholder="0000 0000" 
-                       class="w-full p-5 rounded-2xl bg-slate-900/80 border border-slate-800 text-center text-3xl font-bold tracking-[0.3em] outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10 transition-all text-white placeholder:text-slate-800"
-                >
-                
-                <p class="mt-3 text-[10px] text-slate-500 italic">
-                    Lo encontrás en el frente de tu tarjeta física.
-                </p>
+                <input id="tarjetaInput"
+                       type="tel" maxlength="4" placeholder="0000"
+                       onkeydown="if(event.key==='Enter') login()"
+                       class="w-full p-4 rounded-2xl bg-slate-900/80 border border-slate-800 text-center text-2xl font-bold tracking-[0.3em] outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10 transition-all text-white placeholder:text-slate-800">
+                <p class="mt-2 text-[10px] text-slate-600 italic">El código que te asignaron al registrarte.</p>
             </div>
 
-            <button id="loginBtn" onclick="login()" 
-                    class="w-full bg-blue-700 hover:bg-blue-600 p-5 rounded-2xl font-bold text-lg shadow-xl shadow-blue-900/20 uppercase tracking-widest transition-all active:scale-95 flex items-center justify-center gap-3 group">
-                <span id="loginBtnText">Ver mis beneficios</span>
-                <svg id="loginBtnArrow" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+            <div id="loginMessage" class="hidden w-full p-3 rounded-xl border text-xs font-bold text-center transition-all"></div>
+
+            <button id="loginBtn" onclick="login()"
+                    class="w-full bg-blue-700 hover:bg-blue-600 p-4 rounded-2xl font-bold text-sm shadow-xl shadow-blue-900/20 uppercase tracking-widest transition-all active:scale-95 flex items-center justify-center gap-3 group">
+                <span id="loginBtnText">Ingresar</span>
+                <svg id="loginBtnArrow" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
                 </svg>
                 <div id="loginBtnSpinner" class="btn-spinner hidden"></div>
             </button>
         </div>
 
-        <p class="text-[10px] text-slate-600 uppercase tracking-widest font-bold">
-            Más sabor en cada bocado
-        </p>
+        <p class="text-[9px] text-slate-700 uppercase tracking-widest font-bold">Más sabor en cada bocado</p>
     </div>
 </div>
 
-    <div id="appSection" class="hidden min-h-screen">
-        <nav class="p-4 lg:px-12 flex justify-between items-center border-b border-white/5 bg-slate-950/80 sticky top-0 z-50 backdrop-blur-md">
-            <img src="https://imagedelivery.net/ut8GNCA1obOu4JnXrJ_J9Q/e7b59903-06e0-48f8-1bb1-71bd6da8a800/public" class="h-10 w-auto" alt="Logo">
-            <button onclick="logout()" class="text-slate-400 hover:text-white text-xs font-bold bg-white/5 px-4 py-2 rounded-xl uppercase tracking-wider border border-white/5">Salir</button>
-        </nav>
+<!-- APP -->
+<div id="appSection" class="hidden min-h-screen">
 
-        <main class="max-w-7xl mx-auto p-6 lg:p-12">
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-12">
-                
-                <div class="lg:col-span-5 space-y-8 lg:sticky lg:top-28">
-                    <div class="card-container" id="scene">
-                        <div class="mx-auto w-full max-w-[340px] lg:max-w-full">
-                        <div id="card" class="card-premium rounded-[1.8rem] p-6 sm:p-8 aspect-[1.6/1] flex flex-col justify-between">
+    <nav class="px-4 sm:px-6 lg:px-12 py-3 flex justify-between items-center border-b border-white/5 bg-slate-950/80 sticky top-0 z-50 backdrop-blur-md">
+        <img src="https://imagedelivery.net/ut8GNCA1obOu4JnXrJ_J9Q/e7b59903-06e0-48f8-1bb1-71bd6da8a800/public" class="h-7 sm:h-8 w-auto" alt="Logo">
+        <div class="flex items-center gap-2 sm:gap-3">
+            <div id="navBadgeNivel" class="badge-nivel hidden"></div>
+            <button onclick="logout()" class="text-slate-500 hover:text-white text-[9px] sm:text-[10px] font-bold bg-white/[0.03] hover:bg-white/[0.06] px-3 py-2 rounded-xl uppercase tracking-wider border border-white/5 transition-all">Salir</button>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto p-3 sm:p-5 lg:p-10">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 lg:gap-12">
+
+            <!-- COLUMNA IZQUIERDA -->
+            <div class="lg:col-span-5 space-y-4 sm:space-y-5 lg:sticky lg:top-24 self-start">
+
+                <!-- SALUDO -->
+                <div class="anim-fadein delay-1">
+                    <div class="saludo-chip mb-2">
+                        <span class="hora-dot"></span>
+                        <span id="saludoTexto">Buenas tardes</span>
+                    </div>
+                    <h1 class="text-2xl sm:text-3xl font-black tracking-tight leading-tight text-white">
+                        ¡Hola, <span id="userNameGreet" class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400">...</span>!
+                    </h1>
+                    <p class="text-slate-500 text-xs sm:text-sm mt-1 font-medium" id="motivationalText">Seguís sumando puntos</p>
+                </div>
+
+                <!-- TARJETA 3D -->
+                <div class="card-container anim-fadein delay-2" id="scene">
+                    <div class="mx-auto w-full max-w-[300px] sm:max-w-[340px] lg:max-w-full">
+                        <div id="card" class="card-premium rounded-[1.6rem] p-4 sm:p-6 aspect-[1.6/1] flex flex-col justify-between">
                             <div class="card-glare"></div>
-                            
+
                             <div class="relative z-10 flex justify-between items-start">
-                                <div class="card-chip scale-90 sm:scale-100 origin-top-left"></div>
-                                <div class="text-right opacity-20">
-                                    <p class="text-[7px] sm:text-[8px] font-bold text-white uppercase tracking-[0.4em]">Más que Burgers Card</p>
-                                </div>
+                                <div class="card-chip scale-75 sm:scale-90 origin-top-left"></div>
+                                <p class="text-[6px] sm:text-[7px] font-bold text-white/10 uppercase tracking-[0.35em]">Más que Burgers Card</p>
                             </div>
 
                             <div class="relative z-10 text-3d">
-                                <p class="text-[9px] sm:text-[10px] uppercase font-bold text-blue-400/50 mb-1 tracking-[0.2em]">Puntos Disponibles</p>
-                                <div class="flex items-baseline gap-2">
-                                    <span id="userPoints" class="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tighter text-white drop-shadow-2xl">0</span>
-                                    <span class="text-base sm:text-lg font-bold text-white/30 italic">PTS</span>
+                                <p class="text-[8px] sm:text-[9px] uppercase font-bold text-blue-400/50 mb-0.5 tracking-[0.2em]">Puntos Disponibles</p>
+                                <div class="flex items-baseline gap-1.5">
+                                    <span id="userPoints" class="text-2xl sm:text-4xl lg:text-5xl font-black tracking-tighter text-white drop-shadow-2xl">0</span>
+                                    <span class="text-xs sm:text-base font-bold text-white/30 italic">PTS</span>
                                 </div>
                             </div>
 
-                            <div class="relative z-10 flex justify-between items-end border-t border-white/5 pt-4 sm:pt-5">
-                                <div class="space-y-1">
-                                    <h2 id="userName" class="text-sm sm:text-base font-bold tracking-widest text-white uppercase italic text-3d">Cargando...</h2>
-                                    <p id="cardNumberDisplay" class="font-mono text-[10px] text-blue-400/30 tracking-[0.3em]">0000 0000</p>
+                            <div class="relative z-10 flex justify-between items-end border-t border-white/5 pt-2.5 sm:pt-4">
+                                <div>
+                                    <h2 id="userName" class="text-[10px] sm:text-xs font-bold tracking-widest text-white uppercase italic text-3d leading-none">Cargando...</h2>
+                                    <!-- VER PIN -->
+                                    <div class="pin-row">
+                                        <span class="pin-dots" id="pinDots">&#9679; &#9679; &#9679; &#9679;</span>
+                                        <span class="pin-value" id="pinValue"></span>
+                                        <button class="pin-btn" id="pinBtn" onclick="togglePin()" title="Ver PIN">
+                                            <!-- ojo cerrado -->
+                                            <svg id="iconOjoCerrado" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                                                <line x1="1" y1="1" x2="23" y2="23"/>
+                                            </svg>
+                                            <!-- ojo abierto -->
+                                            <svg id="iconOjoAbierto" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none">
+                                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                                <circle cx="12" cy="12" r="3"/>
+                                            </svg>
+                                        </button>
+                                    </div>
                                 </div>
-                                
                                 <div class="logo-3d">
-                                    <img src="https://imagedelivery.net/ut8GNCA1obOu4JnXrJ_J9Q/e7b59903-06e0-48f8-1bb1-71bd6da8a800/public" 
-                                         class="h-9 sm:h-12 w-auto drop-shadow-[0_8px_15px_rgba(0,0,0,0.6)]" 
-                                         alt="Brand Logo">
+                                    <img src="https://imagedelivery.net/ut8GNCA1obOu4JnXrJ_J9Q/e7b59903-06e0-48f8-1bb1-71bd6da8a800/public"
+                                         class="h-6 sm:h-9 w-auto drop-shadow-[0_8px_15px_rgba(0,0,0,0.6)]" alt="Logo">
                                 </div>
                             </div>
-                            
-                            <div class="absolute -bottom-20 -left-20 w-64 h-64 bg-blue-600/5 rounded-full blur-[100px]"></div>
-                        </div>
-                        </div>
-                    </div>
 
-                    <div class="glass rounded-3xl p-6 border border-white/5">
-                        <p class="text-slate-400 text-xs leading-relaxed font-medium">
-                            🍔 <b class="text-white">Tip Pro:</b> Canjeá tus puntos por combos gratis. Mostrá esta pantalla en caja antes de pedir tu cuenta.
-                        </p>
+                            <div class="absolute -bottom-20 -left-20 w-64 h-64 bg-blue-600/5 rounded-full blur-[100px] pointer-events-none"></div>
+                        </div>
                     </div>
                 </div>
 
-                <div class="lg:col-span-7 space-y-12">
-                    <section class="glass p-8 rounded-[2.5rem] border border-white/10 bg-gradient-to-r from-blue-900/10 to-transparent">
-                        <div class="flex justify-between items-end mb-6">
-                            <div>
-                                <h3 class="text-xl font-bold uppercase italic">Tu próximo premio</h3>
-                                <p id="progresoTexto" class="text-slate-400 text-sm mt-1"></p>
-                            </div>
-                            <span id="porcentajeTexto" class="text-4xl font-black text-blue-500">0%</span>
-                        </div>
-                        <div class="w-full bg-slate-900 rounded-full h-5 p-1 border border-white/5">
-                            <div id="barraProgreso" class="bg-gradient-to-r from-blue-600 to-emerald-400 h-full rounded-full transition-all duration-1000 w-0 shadow-[0_0_15px_rgba(37,99,235,0.4)]"></div>
-                        </div>
-                    </section>
+                <!-- CÓMO FUNCIONA -->
+                <div class="glass rounded-2xl p-4 sm:p-5 anim-fadein delay-3">
+                    <h4 class="text-[9px] uppercase tracking-[0.3em] font-black text-slate-500 mb-4">Como funciona</h4>
 
-                    <section>
-                        <h3 class="text-xl font-bold uppercase italic mb-6">Canjes disponibles</h3>
-                        <div id="premiosContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
-                    </section>
+                    <div class="flex gap-3 items-start">
+                        <div class="paso-num">1</div>
+                        <div class="pt-0.5">
+                            <p class="text-xs font-bold text-white">Pedí en caja</p>
+                            <p class="text-[10px] text-slate-500 mt-0.5 leading-relaxed">Cada compra suma puntos. Pedíselo al cajero.</p>
+                        </div>
+                    </div>
+                    <div class="paso-conector"></div>
 
-                    <section>
-                        <h3 class="text-xl font-bold uppercase italic mb-6">Actividad Reciente</h3>
-                        <div id="historialContainer" class="bg-slate-900/30 border border-white/5 rounded-[2.5rem] overflow-hidden"></div>
-                    </section>
+                    <div class="flex gap-3 items-start">
+                        <div class="paso-num">2</div>
+                        <div class="pt-0.5">
+                            <p class="text-xs font-bold text-white">Acumulá puntos</p>
+                            <p class="text-[10px] text-slate-500 mt-0.5 leading-relaxed">Llegá al mínimo requerido de cada premio.</p>
+                        </div>
+                    </div>
+                    <div class="paso-conector"></div>
+
+                    <div class="flex gap-3 items-start">
+                        <div class="paso-num">3</div>
+                        <div class="pt-0.5">
+                            <p class="text-xs font-bold text-white">Mostrá esta pantalla</p>
+                            <p class="text-[10px] text-slate-500 mt-0.5 leading-relaxed">Enseñá tu tarjeta en caja <b class="text-white/60">antes</b> de pagar.</p>
+                        </div>
+                    </div>
+                    <div class="paso-conector"></div>
+
+                    <div class="flex gap-3 items-start">
+                        <div class="paso-num">
+                            <!-- regalo SVG -->
+                            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="20 12 20 22 4 22 4 12"/>
+                                <rect x="2" y="7" width="20" height="5"/>
+                                <line x1="12" y1="22" x2="12" y2="7"/>
+                                <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/>
+                                <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/>
+                            </svg>
+                        </div>
+                        <div class="pt-0.5">
+                            <p class="text-xs font-bold text-white">Disfrutá tu premio</p>
+                            <p class="text-[10px] text-slate-500 mt-0.5 leading-relaxed">Los puntos se descuentan al canjear.</p>
+                        </div>
+                    </div>
                 </div>
 
             </div>
-        </main>
-    </div>
 
-    <!-- Toast container -->
-    <div id="toast-container"></div>
+            <!-- COLUMNA DERECHA -->
+            <div class="lg:col-span-7 space-y-5 sm:space-y-6">
 
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+                <!-- PROGRESO -->
+                <section class="glass p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-white/10 bg-gradient-to-r from-blue-900/10 to-transparent anim-fadein delay-1">
+                    <div class="flex justify-between items-start mb-3 sm:mb-4">
+                        <div class="flex-1 min-w-0 pr-3">
+                            <h3 class="text-sm sm:text-base font-black uppercase italic">Tu próximo premio</h3>
+                            <p id="progresoTexto" class="text-slate-400 text-[11px] sm:text-xs mt-1 leading-relaxed"></p>
+                            <!-- Movimientos debajo del progreso -->
+                            <div id="movimientosContainer" class="mt-2 hidden">
+                                <div class="movimientos-badge">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                                    </svg>
+                                    <span id="movimientosText">0 movimientos</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-right flex-shrink-0">
+                            <span id="porcentajeTexto" class="text-2xl sm:text-3xl font-black text-blue-500">0%</span>
+                            <div id="nivelBadge" class="badge-nivel mt-1.5 hidden ml-auto"></div>
+                        </div>
+                    </div>
+                    <div class="w-full bg-slate-900 rounded-full h-3 sm:h-3.5 p-0.5 border border-white/5">
+                        <div id="barraProgreso" class="progress-fill h-full rounded-full w-0"></div>
+                    </div>
+                </section>
 
-    <script src="db.js"></script>
-    <script src="app.js"></script>
-    <script>
-        // Sistema de Toast Notifications
-        function showToast(message, type = 'info', duration = 4000) {
-            const icons = { error: '⚠️', success: '✓', info: 'ℹ' };
-            const container = document.getElementById('toast-container');
+                <!-- PREMIOS -->
+                <section class="anim-fadein delay-2">
+                    <h3 class="text-sm sm:text-base font-black uppercase italic mb-3">Canjes disponibles</h3>
+                    <div id="premiosContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3"></div>
+                </section>
 
-            const toast = document.createElement('div');
-            toast.className = `toast toast-${type}`;
-            toast.innerHTML = `
-                <div class="toast-icon">${icons[type] || icons.info}</div>
-                <span>${message}</span>
-            `;
+                <!-- ACTIVIDAD -->
+                <section class="anim-fadein delay-3">
+                    <h3 class="text-sm sm:text-base font-black uppercase italic mb-3">Actividad Reciente</h3>
+                    <div class="bg-slate-900/30 border border-white/5 rounded-2xl sm:rounded-[2rem] overflow-hidden">
+                        <div id="historialContainer"></div>
+                        <button id="verMasBtn" class="ver-mas-btn hidden" onclick="toggleHistorial()">
+                            <span id="verMasLabel">Ver todo el historial</span>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </button>
+                    </div>
+                </section>
 
-            container.appendChild(toast);
+            </div>
+        </div>
+    </main>
+</div>
 
-            setTimeout(() => {
-                toast.classList.add('removing');
-                toast.addEventListener('animationend', () => toast.remove());
-            }, duration);
+<!-- FIREBASE + APP -->
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+<script src="db.js"></script>
+<script src="app.js"></script>
+<script>
+
+    /* 3D CARD */
+    const card  = document.getElementById('card');
+    const scene = document.getElementById('scene');
+    scene.addEventListener('mousemove', e => {
+        const r = scene.getBoundingClientRect();
+        const x = e.clientX - r.left, y = e.clientY - r.top;
+        const cx = r.width / 2, cy = r.height / 2;
+        card.style.transform = `rotateX(${(y-cy)/10}deg) rotateY(${(cx-x)/10}deg)`;
+        card.style.setProperty('--x', `${x}px`);
+        card.style.setProperty('--y', `${y}px`);
+    });
+    scene.addEventListener('mouseleave', () => { card.style.transform = 'rotateX(0deg) rotateY(0deg)'; });
+    scene.addEventListener('touchmove', e => {
+        const t = e.touches[0], r = scene.getBoundingClientRect();
+        const x = t.clientX - r.left, y = t.clientY - r.top;
+        const cx = r.width / 2, cy = r.height / 2;
+        card.style.transform = `rotateX(${(y-cy)/14}deg) rotateY(${(cx-x)/14}deg)`;
+    }, { passive: true });
+    scene.addEventListener('touchend', () => { card.style.transform = 'rotateX(0deg) rotateY(0deg)'; });
+
+    /* VER / OCULTAR PIN */
+    let pinVisible = false;
+    function togglePin() {
+        pinVisible = !pinVisible;
+        document.getElementById('pinDots').style.display  = pinVisible ? 'none'   : 'inline';
+        document.getElementById('pinValue').style.display = pinVisible ? 'inline' : 'none';
+        document.getElementById('iconOjoCerrado').style.display = pinVisible ? 'none'  : 'inline';
+        document.getElementById('iconOjoAbierto').style.display = pinVisible ? 'inline': 'none';
+        document.getElementById('pinBtn').classList.toggle('active', pinVisible);
+    }
+
+    /* SALUDO */
+    function obtenerSaludo() {
+        const h = new Date().getHours();
+        if (h >= 6  && h < 12) return { texto: 'Buenos días',   motiv: 'Empezá el día con todo' };
+        if (h >= 12 && h < 15) return { texto: 'Buen mediodía', motiv: '¿Hora de una burger?' };
+        if (h >= 15 && h < 20) return { texto: 'Buenas tardes', motiv: 'Seguís sumando puntos' };
+        return                         { texto: 'Buenas noches', motiv: 'Descansá y volvé por más' };
+    }
+
+    /* NIVEL — sin bronce */
+    function obtenerNivel(puntos) {
+        if (puntos < 500)  return null;
+        if (puntos < 1500) return { nombre: 'Plata',    clase: 'badge-plata',
+            svg: '<path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>' };
+        if (puntos < 3000) return { nombre: 'Oro',      clase: 'badge-oro',
+            svg: '<path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>' };
+        return                     { nombre: 'Diamante', clase: 'badge-diamante',
+            svg: '<path d="M6 3h12l4 6-10 13L2 9l4-6z"/>' };
+    }
+
+    function renderBadgeNivel(puntos) {
+        const nivel = obtenerNivel(puntos);
+        ['nivelBadge','navBadgeNivel'].forEach(id => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            if (!nivel) { el.classList.add('hidden'); return; }
+            el.className = `badge-nivel ${nivel.clase}`;
+            el.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="9" height="9" viewBox="0 0 24 24" fill="currentColor">${nivel.svg}</svg> ${nivel.nombre}`;
+            el.classList.remove('hidden');
+            if (id === 'navBadgeNivel') el.classList.add('badge-pulse');
+        });
+    }
+
+    /* HISTORIAL */
+    const HISTORIAL_PREVIEW = 3;
+    let historialExpandido = false;
+
+    function toggleHistorial() {
+        historialExpandido = !historialExpandido;
+        document.querySelectorAll('.historial-item.extra').forEach(el => {
+            el.classList.toggle('hidden-item', !historialExpandido);
+        });
+        document.getElementById('verMasBtn').classList.toggle('expanded', historialExpandido);
+        document.getElementById('verMasLabel').textContent = historialExpandido ? 'Mostrar menos' : 'Ver todo el historial';
+    }
+
+    /* OVERRIDE renderHistorial */
+    window.renderHistorial = function() {
+        const container = document.getElementById('historialContainer');
+        container.innerHTML = '';
+        const btn  = document.getElementById('verMasBtn');
+        const logs = [...usuarioActual.historial].reverse();
+
+        if (logs.length === 0) {
+            container.innerHTML = `<p class="text-center text-slate-600 text-xs italic p-8">Todavía no hay actividad registrada.</p>`;
+            btn.classList.add('hidden');
+            return;
         }
 
-        // Lógica del efecto 3D de la tarjeta
-        const card = document.getElementById('card');
-        const scene = document.getElementById('scene');
-
-        scene.addEventListener('mousemove', (e) => {
-            const rect = scene.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            
-            const centerX = rect.width / 2;
-            const centerY = rect.height / 2;
-            
-            const rotateX = (y - centerY) / 10;
-            const rotateY = (centerX - x) / 10;
-
-            card.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
-            
-            // Actualizar posición del brillo
-            card.style.setProperty('--x', `${x}px`);
-            card.style.setProperty('--y', `${y}px`);
+        logs.forEach((h, index) => {
+            const esSuma  = h.puntos > 0;
+            const esExtra = index >= HISTORIAL_PREVIEW;
+            const div = document.createElement('div');
+            div.className = `historial-item flex justify-between items-center px-4 py-3 sm:px-5 sm:py-4 ${index !== logs.length - 1 ? 'border-b border-white/5' : ''} ${esExtra ? 'extra hidden-item' : ''}`;
+            div.innerHTML = `
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${esSuma ? 'bg-emerald-500/10' : 'bg-rose-500/10'}">
+                        ${esSuma
+                            ? `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>`
+                            : `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#f43f5e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>`
+                        }
+                    </div>
+                    <div>
+                        <p class="text-xs sm:text-sm font-bold text-slate-200 leading-tight">${h.descripcion}</p>
+                        <p class="text-[9px] sm:text-[10px] text-slate-500 uppercase font-black mt-0.5">${h.fecha}</p>
+                    </div>
+                </div>
+                <span class="font-black tabular-nums text-xs sm:text-sm ml-3 flex-shrink-0 ${esSuma ? 'text-emerald-400' : 'text-rose-400'}">
+                    ${esSuma ? '+' : ''}${h.puntos}
+                </span>`;
+            container.appendChild(div);
         });
 
-        scene.addEventListener('mouseleave', () => {
-            card.style.transform = `rotateX(0deg) rotateY(0deg)`;
+        btn.classList.toggle('hidden', logs.length <= HISTORIAL_PREVIEW);
+    };
+
+    /* OVERRIDE renderPremios — compacto en mobile */
+    window.renderPremios = function() {
+        const container = document.getElementById('premiosContainer');
+        container.innerHTML = '';
+        if (premios.length === 0) {
+            container.innerHTML = `<div class="col-span-full glass p-8 rounded-2xl text-center text-slate-500 italic text-xs">Próximamente habrá premios disponibles para canjear</div>`;
+            return;
+        }
+        premios.forEach(p => {
+            const puede = usuarioActual.puntos >= p.puntos;
+            const tieneImagen = p.imagen && p.imagen.trim() !== '';
+            const fallbackSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#334155" stroke-width="1.8"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>`;
+            const div = document.createElement('div');
+            div.className = 'glass p-3 sm:p-5 rounded-2xl flex flex-col justify-between gap-3 transition-all hover:bg-white/[0.04]';
+            div.innerHTML = `
+                <div class="flex gap-3 items-start">
+                    <div class="w-12 h-12 sm:w-16 sm:h-16 flex-shrink-0 overflow-hidden rounded-xl border border-white/10 bg-slate-800 flex items-center justify-center">
+                        ${tieneImagen ? `<img src="${p.imagen}" alt="${p.nombre}" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML='${fallbackSVG}'">` : fallbackSVG}
+                    </div>
+                    <div class="min-w-0">
+                        <h4 class="font-bold text-xs sm:text-sm text-white leading-tight">${p.nombre}</h4>
+                        <p class="text-[9px] sm:text-[10px] text-slate-500 mt-0.5 uppercase font-semibold">${p.categoria || ''}</p>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between border-t border-white/5 pt-2.5">
+                    <span class="text-blue-400 font-black tracking-tighter text-sm">${p.puntos} PTS</span>
+                    <button disabled class="px-3 sm:px-4 py-1.5 rounded-xl font-bold text-[9px] sm:text-[10px] uppercase ${puede ? 'bg-blue-600 shadow-lg shadow-blue-600/20 text-white' : 'bg-slate-800 text-slate-500 opacity-40 cursor-not-allowed'}">
+                        ${puede ? 'Canjear' : 'Faltan pts'}
+                    </button>
+                </div>`;
+            container.appendChild(div);
         });
-    </script>
+    };
+
+    /* OVERRIDE renderAll */
+    window.renderAll = function() {
+        const pin = localStorage.getItem('puntos_user_pin') || '';
+        document.getElementById('pinValue').textContent = pin;
+
+        document.getElementById('userName').innerText       = usuarioActual.nombre;
+        document.getElementById('userPoints').innerText     = usuarioActual.puntos.toLocaleString();
+        document.getElementById('userNameGreet').innerText  = usuarioActual.nombre;
+
+        const sal = obtenerSaludo();
+        document.getElementById('saludoTexto').textContent = sal.texto;
+        document.getElementById('motivationalText').textContent =
+            usuarioActual.puntos < 100  ? 'Ya casi llegás a tu primer canje' :
+            usuarioActual.puntos >= 3000 ? 'Sos de los mejores clientes'     : sal.motiv;
+
+        renderBadgeNivel(usuarioActual.puntos);
+
+        const logs = usuarioActual.historial || [];
+        const mCont = document.getElementById('movimientosContainer');
+        if (logs.length > 0) {
+            mCont.classList.remove('hidden');
+            document.getElementById('movimientosText').textContent =
+                `${logs.length} movimiento${logs.length !== 1 ? 's' : ''} registrado${logs.length !== 1 ? 's' : ''}`;
+        }
+
+        renderProgreso();
+        renderPremios();
+        renderHistorial();
+    };
+
+</script>
 </body>
 </html>
