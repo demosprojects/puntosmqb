@@ -16,16 +16,34 @@ function setBtnLoading(btnId, textId, spinnerId, loading, label) {
     if (spinner) spinner.classList.toggle('hidden', !loading);
 }
 
-initDB().then(async () => {
+// ── Guardián de autenticación ──────────────────────────────
+// Espera a que Firebase confirme el estado de sesión antes de
+// mostrar cualquier cosa. Si no hay usuario, redirige al login.
+firebase.auth().onAuthStateChanged(async (user) => {
+    if (!user) {
+        // Sin sesión → patear al login sin mostrar el panel
+        window.location.replace('login.html');
+        return;
+    }
+    // Sesión válida → cargar la app normalmente
+    await initDB();
     await initProductos();
     hideLoader();
     renderStock();
-    // renderPanelProductos() se llama solo tras verificar el PIN
 });
+
+// ── Cerrar sesión ──────────────────────────────────────────
+function cerrarSesion() {
+    firebase.auth().signOut().then(() => {
+        window.location.replace('login.html');
+    }).catch(() => {
+        showToast('Error al cerrar sesión. Intentá de nuevo.', 'error');
+    });
+}
 
 // ── PIN de acceso a Productos ──────────────────────────────
 // SHA-256 del PIN del dueño. Para cambiarlo: https://emn178.github.io/online-tools/sha256.html
-const OWNER_PIN_HASH = '4dea5c7cb70f50322ec9d734aa4aa078be9227c05251e18991c596f387552370';
+const OWNER_PIN_HASH = '5994471abb01112afcc18159f6cc74b4f511b99806da59b3caf5a9c173cacfc5';
 let productosPinVerificado = false;
 
 async function hashPin(pin) {
@@ -112,15 +130,92 @@ function switchTab(tab) {
     if (tab === 'productos') renderPanelProductos();
 }
 
+
+
+// ── Copiar teléfono ────────────────────────────────────────
+function copiarTelefono() {
+    if (!clienteActual || !clienteActual.telefono) return;
+    navigator.clipboard.writeText(clienteActual.telefono).then(() => {
+        const iconCopy  = document.getElementById('iconCopy');
+        const iconCheck = document.getElementById('iconCheck');
+        if (iconCopy)  iconCopy.classList.add('hidden');
+        if (iconCheck) iconCheck.classList.remove('hidden');
+        setTimeout(() => {
+            if (iconCopy)  iconCopy.classList.remove('hidden');
+            if (iconCheck) iconCheck.classList.add('hidden');
+        }, 2000);
+    }).catch(() => showToast('No se pudo copiar.', 'error'));
+}
+
+// ── Toggle PIN visible/oculto ──────────────────────────────
+let pinVisible = false;
+let pinRealValue = '----';
+
+function togglePin() {
+    pinVisible = !pinVisible;
+    const pinEl       = document.getElementById('adminPin');
+    const iconAbierto = document.getElementById('iconOjoAbierto');
+    const iconCerrado = document.getElementById('iconOjoCerrado');
+    if (!pinEl) return;
+    pinEl.textContent = pinVisible ? pinRealValue : '••••';
+    if (iconAbierto) iconAbierto.classList.toggle('hidden', !pinVisible);
+    if (iconCerrado) iconCerrado.classList.toggle('hidden', pinVisible);
+}
+
+// ── Control de layout columnas ─────────────────────────────
+function modoActivacion() {
+    // Oculta col izquierda, expande col derecha a 12
+    const izq = document.getElementById('columnaIzquierda');
+    const der = document.getElementById('columnaDerecha');
+    if (izq) izq.classList.add('hidden');
+    if (der) {
+        der.classList.remove('lg:col-span-8');
+        der.classList.add('lg:col-span-12');
+    }
+}
+
+function modoBusqueda() {
+    // Restaura layout normal
+    const izq = document.getElementById('columnaIzquierda');
+    const der = document.getElementById('columnaDerecha');
+    if (izq) izq.classList.remove('hidden');
+    if (der) {
+        der.classList.remove('lg:col-span-12');
+        der.classList.add('lg:col-span-8');
+    }
+}
+
+// ── Volver al estado inicial ───────────────────────────────
+function volverAlInicio() {
+    clienteActual = null;
+    tarjetaBuscadaActual = null;
+    pinVisible = false;
+    pinRealValue = '----';
+    document.getElementById("buscarTarjeta").value = "";
+    // Restaurar layout de columnas
+    modoBusqueda();
+    // Panel izquierdo: mostrar buscador, ocultar info activa
+    document.getElementById("buscarPanel").classList.remove("hidden");
+    document.getElementById("activaPanel").classList.add("hidden");
+    // Panel derecho: ocultar todo, mostrar placeholder
+    document.getElementById("clienteAcciones").classList.add("hidden");
+    document.getElementById("panelActivacion").classList.add("hidden");
+    document.getElementById("noCliente").classList.remove("hidden");
+    setTimeout(() => document.getElementById("buscarTarjeta").focus(), 50);
+}
+
 // ── Gestión de clientes ────────────────────────────────────
 async function buscarCliente() {
-    const tarjeta = document.getElementById("buscarTarjeta").value;
+    const inputValor = document.getElementById("buscarTarjeta").value;
+    const tarjeta = inputValor.replace(/\s+/g, ''); // Limpiamos los espacios
+
+    if (tarjeta.length === 0) return;
+
     setBtnLoading('btnBuscar', 'btnBuscarText', 'btnBuscarSpinner', true, 'Validar Tarjeta');
     const usuario = await getUsuario(tarjeta);
     setBtnLoading('btnBuscar', 'btnBuscarText', 'btnBuscarSpinner', false, 'Validar Tarjeta');
 
     document.getElementById("noCliente").classList.add("hidden");
-    document.getElementById("clienteResumen").classList.add("hidden");
     document.getElementById("clienteAcciones").classList.add("hidden");
     document.getElementById("panelActivacion").classList.add("hidden");
 
@@ -133,6 +228,10 @@ async function buscarCliente() {
     tarjetaBuscadaActual = tarjeta;
 
     if (!usuario.asignada) {
+        // Tarjeta libre: centrar panel de activación (col-span-12)
+        modoActivacion();
+        document.getElementById("buscarPanel").classList.add("hidden");
+        document.getElementById("activaPanel").classList.add("hidden");
         document.getElementById("panelActivacion").classList.remove("hidden");
         const num = tarjeta.replace(/(\d{4})(\d{4})/, '$1 $2');
         document.getElementById("previewNumero").innerText = num;
@@ -140,11 +239,14 @@ async function buscarCliente() {
         document.getElementById("nuevoNombre").value = "";
         document.getElementById("nuevoTel").value = "";
     } else {
+        // Tarjeta asignada: mostrar activaPanel con datos del cliente
         clienteActual = usuario;
-        document.getElementById("clienteResumen").classList.remove("hidden");
+        document.getElementById("buscarPanel").classList.add("hidden");
+        document.getElementById("activaPanel").classList.remove("hidden");
         document.getElementById("clienteAcciones").classList.remove("hidden");
         renderCliente();
         populateSelects();
+        verificarLimiteCanje();
     }
 }
 
@@ -160,27 +262,60 @@ async function activarTarjeta() {
     if (!nombre || !tel) { showToast("Completá el nombre y teléfono del cliente.", "warn"); return; }
 
     setBtnLoading('btnActivar', 'btnActivarText', 'btnActivarSpinner', true, 'Activar Tarjeta');
+    
+    // 1. Generar PIN único de 4 dígitos (ej: 0492)
+    let nuevoPin;
+    let existePin = true;
+    while (existePin) {
+        nuevoPin = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+        // Chequeamos que nadie más tenga este PIN
+        existePin = usuarios.some(u => u.pin === nuevoPin);
+    }
+
+    // 2. Guardar en el array y Firebase
     const index = usuarios.findIndex(u => u.tarjeta === tarjetaBuscadaActual);
     usuarios[index] = {
         ...usuarios[index],
-        asignada: true, nombre, telefono: tel, puntos: 100,
+        asignada: true, nombre, telefono: tel, puntos: 100, pin: nuevoPin,
         historial: [{ fecha: new Date().toISOString().split('T')[0], descripcion: "Bono Bienvenida", puntos: 100 }]
     };
     await updateUsuario(usuarios[index]);
+    
     setBtnLoading('btnActivar', 'btnActivarText', 'btnActivarSpinner', false, 'Activar Tarjeta');
-    showToast("¡Tarjeta activada con éxito!", "success");
+    
+    // 3. Abrir modal personalizado de éxito con el PIN generado
+    document.getElementById('modalPinNombre').innerText = nombre;
+    document.getElementById('modalPinGenerado').innerText = nuevoPin;
+    document.getElementById('modalPinActivacion').classList.remove('hidden');
+    
     document.getElementById("nuevoNombre").value = "";
     document.getElementById("nuevoTel").value = "";
-    buscarCliente();
+    // No llamamos a buscarCliente() — el modal tapa todo y al cerrarlo volverAlInicio() limpia el estado
+}
+
+function cerrarModalPinActivacion() {
+    document.getElementById('modalPinActivacion').classList.add('hidden');
+    volverAlInicio();
 }
 
 function renderCliente() {
     document.getElementById("adminNombre").innerText = clienteActual.nombre;
     document.getElementById("adminPuntos").innerText = clienteActual.puntos.toLocaleString();
-    const oldInfo = document.getElementById("adminNombre").nextElementSibling;
-    if (oldInfo && oldInfo.tagName === 'P') oldInfo.remove();
-    document.getElementById("adminNombre").insertAdjacentHTML('afterend',
-        `<p class="text-[10px] text-slate-500 font-bold mt-2 uppercase">Contacto: ${clienteActual.telefono}</p>`);
+
+    // Teléfono
+    const telEl = document.getElementById("adminTelefono");
+    if (telEl) telEl.innerText = clienteActual.telefono || '—';
+
+    // PIN: siempre arrancar oculto al cargar un nuevo cliente
+    pinRealValue = clienteActual.pin || '----';
+    pinVisible = false;
+    const pinEl       = document.getElementById("adminPin");
+    const iconAbierto = document.getElementById("iconOjoAbierto");
+    const iconCerrado = document.getElementById("iconOjoCerrado");
+    if (pinEl)       pinEl.textContent = '••••';
+    if (iconAbierto) iconAbierto.classList.add("hidden");
+    if (iconCerrado) iconCerrado.classList.remove("hidden");
+
     renderHistorial();
 }
 
@@ -293,6 +428,7 @@ async function restarPuntos() {
     select.value = "";
     document.getElementById("previewPuntosRestar").classList.add("hidden");
     renderCliente();
+    verificarLimiteCanje(); // VERIFICA Y BLOQUEA AL INSTANTE
 }
 
 // ── Stock de tarjetas ──────────────────────────────────────
@@ -305,10 +441,18 @@ function setFiltro(f) {
     renderStock();
 }
 
-function copiarTarjeta(num) {
+function copiarTarjeta(num, btn) {
     navigator.clipboard.writeText(num).then(() => {
-        showToast(`Número ${num} copiado al portapapeles.`, "info", 2500);
-    });
+        if (!btn) return;
+        const iconCopy  = btn.querySelector('.icon-copy-t');
+        const iconCheck = btn.querySelector('.icon-check-t');
+        if (iconCopy)  iconCopy.classList.add('hidden');
+        if (iconCheck) iconCheck.classList.remove('hidden');
+        setTimeout(() => {
+            if (iconCopy)  iconCopy.classList.remove('hidden');
+            if (iconCheck) iconCheck.classList.add('hidden');
+        }, 2000);
+    }).catch(() => showToast('No se pudo copiar.', 'error'));
 }
 
 function renderStock() {
@@ -323,7 +467,8 @@ function renderStock() {
         if (filtroActual === 'libre'    && u.asignada)  return false;
         if (filtroActual === 'asignada' && !u.asignada) return false;
         if (busqueda) {
-            const ok = u.tarjeta.includes(busqueda)
+            // Se limpian los espacios para que coincida aunque copien el número con formato
+            const ok = u.tarjeta.includes(busqueda.replace(/\s+/g, ''))
                 || (u.nombre || "").toLowerCase().includes(busqueda)
                 || (u.telefono || "").toLowerCase().includes(busqueda);
             if (!ok) return false;
@@ -340,24 +485,40 @@ function renderStock() {
             <tr class="border-b border-white/5 hover:bg-white/[0.02] transition-all group">
                 <td class="p-5">
                     <div class="flex items-center gap-2">
-                        <span class="font-mono text-blue-400 tracking-widest text-sm">${u.tarjeta.replace(/(\d{4})(\d{4})/, '$1 $2')}</span>
-                        <button onclick="copiarTarjeta('${u.tarjeta}')" title="Copiar número"
-                            class="opacity-0 group-hover:opacity-100 transition-opacity w-7 h-7 rounded-lg bg-white/5 hover:bg-blue-500/20 hover:text-blue-400 text-slate-500 flex items-center justify-center text-xs border border-white/5">⎘</button>
+                        <span class="font-mono text-green-500 tracking-widest text-sm">${u.tarjeta.replace(/(\d{4})(\d{4})/, '$1 $2')}</span>
+                        <button onclick="copiarTarjeta('${u.tarjeta}', this)" title="Copiar número"
+                            class="opacity-0 group-hover:opacity-100 transition-opacity w-7 h-7 rounded-lg bg-white/5 hover:bg-blue-500/20 border border-white/5 hover:border-blue-500/30 flex items-center justify-center transition-all flex-shrink-0 group-copy">
+                            <svg class="icon-copy-t text-slate-500 group-copy-hover:text-blue-400 transition-colors" width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <rect x="9" y="9" width="13" height="13" rx="2" stroke="currentColor" stroke-width="1.8" fill="none"/>
+                                <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                            </svg>
+                            <svg class="icon-check-t hidden text-blue-400" width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </button>
                     </div>
                 </td>
                 <td class="p-5">
-                    <span class="px-3 py-1 rounded-full text-[9px] font-black uppercase ${u.asignada ? 'bg-blue-500/10 text-blue-400' : 'bg-emerald-500/10 text-emerald-500'}">
+                    <span class="px-3 py-1 rounded-full text-[9px] font-black uppercase ${u.asignada ? 'bg-green-900/40 text-green-500' : 'bg-emerald-500/10 text-emerald-500'}">
                         ${u.asignada ? 'Asignada' : 'Libre'}
                     </span>
+                    ${u.asignada && u.pin ? `<span class="block mt-2 text-[10px] text-green-400 font-mono tracking-widest font-bold">PIN: ${u.pin}</span>` : ''}
                 </td>
                 <td class="p-5 text-slate-300 font-bold text-sm">${u.nombre || '—'}</td>
                 <td class="p-5 text-slate-500 font-mono text-sm">${u.telefono || '—'}</td>
                 <td class="p-5 font-black text-sm">${u.puntos}</td>
                 <td class="p-5">
-                    <button onclick="abrirModalEditar('${u.tarjeta}')"
-                        class="opacity-0 group-hover:opacity-100 transition-opacity px-3 py-1.5 rounded-lg bg-white/5 hover:bg-blue-500/10 hover:text-blue-400 text-slate-500 text-[10px] font-bold border border-white/5 transition-all">
-                        Editar
-                    </button>
+                    ${u.asignada ? `
+                    <div class="flex items-center gap-2">
+                        <button onclick="abrirModalEditar('${u.tarjeta}')"
+                            class="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-blue-800/30 hover:text-blue-400 text-slate-400 text-[10px] font-bold border border-white/5 transition-all">
+                            Editar
+                        </button>
+                        <button onclick="eliminarDesdeTabla('${u.tarjeta}')"
+                            class="px-3 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-[10px] font-bold border border-rose-500/10 transition-all">
+                            Eliminar
+                        </button>
+                    </div>` : ''}
                 </td>
             </tr>`;
     });
@@ -424,36 +585,128 @@ async function guardarEdicionTarjeta() {
     renderStock();
 }
 
+// ── Modal de confirmación custom ───────────────────────────
+function showConfirm({ titulo, mensaje, tipo = 'danger', labelAceptar = 'Confirmar', onAceptar }) {
+    const modal    = document.getElementById('modalConfirm');
+    const iconoEl  = document.getElementById('modalConfirmIcono');
+    const tituloEl = document.getElementById('modalConfirmTitulo');
+    const mensajeEl= document.getElementById('modalConfirmMensaje');
+    const btnAcep  = document.getElementById('modalConfirmAceptar');
+    const btnCan   = document.getElementById('modalConfirmCancelar');
+
+    // Ícono y colores según tipo
+    if (tipo === 'danger') {
+        iconoEl.className = 'w-14 h-14 rounded-2xl flex items-center justify-center bg-rose-500/10 border border-rose-500/20';
+        iconoEl.innerHTML = `<svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" stroke="#f87171" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+        btnAcep.className = 'flex-1 bg-rose-600 hover:bg-rose-500 p-3 rounded-xl font-bold text-xs uppercase tracking-widest text-white transition-all shadow-lg shadow-rose-900/30 flex items-center justify-center';
+    } else if (tipo === 'warn') {
+        iconoEl.className = 'w-14 h-14 rounded-2xl flex items-center justify-center bg-amber-500/10 border border-amber-500/20';
+        iconoEl.innerHTML = `<svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke="#fbbf24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+        btnAcep.className = 'flex-1 bg-amber-600 hover:bg-amber-500 p-3 rounded-xl font-bold text-xs uppercase tracking-widest text-white transition-all shadow-lg shadow-amber-900/30 flex items-center justify-center';
+    }
+
+    tituloEl.textContent  = titulo;
+    mensajeEl.textContent = mensaje;
+    btnAcep.textContent   = labelAceptar;
+
+    modal.classList.remove('hidden');
+
+    // Clonar para limpiar listeners anteriores
+    const newAcep = btnAcep.cloneNode(true);
+    const newCan  = btnCan.cloneNode(true);
+    btnAcep.parentNode.replaceChild(newAcep, btnAcep);
+    btnCan.parentNode.replaceChild(newCan, btnCan);
+
+    newAcep.textContent = labelAceptar;
+    newAcep.className   = btnAcep.className || newAcep.className;
+
+    newAcep.addEventListener('click', () => {
+        modal.classList.add('hidden');
+        onAceptar();
+    });
+    newCan.addEventListener('click', () => {
+        modal.classList.add('hidden');
+    });
+}
+
+// ── Eliminar directamente desde la tabla sin abrir el modal de edición
+async function eliminarDesdeTabla(tarjeta) {
+    const u = usuarios.find(x => x.tarjeta === tarjeta);
+    if (!u) return;
+
+    showConfirm({
+        titulo: 'Eliminar cliente',
+        mensaje: `¿Estás seguro de eliminar a ${u.nombre}? Se borrarán sus puntos y la tarjeta/PIN quedarán libres.`,
+        tipo: 'danger',
+        labelAceptar: 'Eliminar',
+        onAceptar: async () => {
+            const idx = usuarios.findIndex(x => x.tarjeta === tarjeta);
+            usuarios[idx] = { tarjeta: u.tarjeta, asignada: false, nombre: "", telefono: "", puntos: 0, historial: [] };
+            await updateUsuario(usuarios[idx]);
+            showToast('Cliente eliminado. Tarjeta y PIN liberados.', 'success');
+            if (clienteActual && clienteActual.tarjeta === tarjeta) volverAlInicio();
+            renderStock();
+        }
+    });
+}
+
+// Nueva función para eliminar cliente y liberar PIN/Tarjeta
+async function eliminarClienteActual() {
+    const u = usuarios.find(x => x.tarjeta === tarjetaEditandoActual);
+    if (!u) return;
+
+    showConfirm({
+        titulo: 'Eliminar cliente',
+        mensaje: `¿Estás seguro de eliminar a ${u.nombre}? Se borrarán sus puntos y la tarjeta/PIN quedarán libres.`,
+        tipo: 'danger',
+        labelAceptar: 'Eliminar',
+        onAceptar: async () => {
+            setBtnLoading('btnGuardarEdit', 'btnGuardarEditText', 'btnGuardarEditSpinner', true, 'Procesando...');
+            const idx = usuarios.findIndex(x => x.tarjeta === tarjetaEditandoActual);
+            usuarios[idx] = { tarjeta: u.tarjeta, asignada: false, nombre: "", telefono: "", puntos: 0, historial: [] };
+            await updateUsuario(usuarios[idx]);
+            setBtnLoading('btnGuardarEdit', 'btnGuardarEditText', 'btnGuardarEditSpinner', false, 'Guardar');
+            showToast('Cliente eliminado. Tarjeta y PIN liberados.', 'success');
+            cerrarModalEditar();
+            if (clienteActual && clienteActual.tarjeta === tarjetaEditandoActual) volverAlInicio();
+            renderStock();
+        }
+    });
+}
+
 async function anularUltimoMovimiento() {
     const u = usuarios.find(x => x.tarjeta === tarjetaEditandoActual);
     if (!u || !u.historial || u.historial.length === 0) return;
 
     const ultimo = u.historial[u.historial.length - 1];
 
-    // No permitir anular una anulación
     if (ultimo.descripcion.startsWith('Anulación:')) {
         showToast('No se puede anular una anulación.', 'warn');
         return;
     }
 
-    if (!confirm(`¿Anular "${ultimo.descripcion}" (${ultimo.puntos > 0 ? '+' : ''}${ultimo.puntos} pts)?`)) return;
-
-    setBtnLoading('btnAnular', 'btnAnularText', 'btnAnularSpinner', true, 'Anular');
-
-    const puntosRevertidos = -ultimo.puntos;
-    u.puntos += puntosRevertidos;
-    u.historial.push({
-        fecha: new Date().toISOString().split('T')[0],
-        descripcion: `Anulación: ${ultimo.descripcion}`,
-        puntos: puntosRevertidos
+    showConfirm({
+        titulo: 'Anular movimiento',
+        mensaje: `¿Anular "${ultimo.descripcion}" (${ultimo.puntos > 0 ? '+' : ''}${ultimo.puntos} pts)? Esta acción no se puede deshacer.`,
+        tipo: 'warn',
+        labelAceptar: 'Anular',
+        onAceptar: async () => {
+            setBtnLoading('btnAnular', 'btnAnularText', 'btnAnularSpinner', true, 'Anular');
+            const puntosRevertidos = -ultimo.puntos;
+            u.puntos += puntosRevertidos;
+            u.historial.push({
+                fecha: new Date().toISOString().split('T')[0],
+                descripcion: `Anulación: ${ultimo.descripcion}`,
+                puntos: puntosRevertidos
+            });
+            await updateUsuario(u);
+            setBtnLoading('btnAnular', 'btnAnularText', 'btnAnularSpinner', false, 'Anular');
+            showToast(`Movimiento anulado. Puntos ajustados a ${u.puntos}.`, 'success');
+            cerrarModalEditar();
+            renderStock();
+            if (clienteActual && clienteActual.tarjeta === tarjetaEditandoActual) buscarCliente();
+        }
     });
-
-    await updateUsuario(u);
-
-    setBtnLoading('btnAnular', 'btnAnularText', 'btnAnularSpinner', false, 'Anular');
-    showToast(`Movimiento anulado. Puntos ajustados a ${u.puntos}.`, 'success');
-    cerrarModalEditar();
-    renderStock();
 }
 
 function mostrarGenerador() { document.getElementById("generadorLote").classList.remove("hidden"); }
@@ -477,20 +730,11 @@ async function procesarGeneracion() {
     for (const tarjeta of nuevosNumeros) {
         await updateUsuario(usuarios.find(u => u.tarjeta === tarjeta));
     }
-    showToast(`Se generaron ${cantidad} tarjetas nuevas.`, "success");
+    showToast(`Se generaron ${cantidad} tarjetas virtuales nuevas.`, "success");
     setBtnLoading('btnGenerar', 'btnGenerarText', 'btnGenerarSpinner', false, 'Crear Números');
     ocultarGenerador();
     document.getElementById("cantidadGenerar").value = "";
     renderStock();
-    descargarListaImprenta(nuevosNumeros);
-}
-
-function descargarListaImprenta(lista) {
-    const contenido = "LISTA DE NÚMEROS DE TARJETAS - MÁS QUE BURGERS\n\n" + lista.join("\n");
-    const blob = new Blob([contenido], { type: 'text/plain' });
-    const url  = window.URL.createObjectURL(blob);
-    const a    = document.createElement('a');
-    a.href = url; a.download = `lote_tarjetas_${new Date().getTime()}.txt`; a.click();
 }
 
 // ── Panel de Productos ─────────────────────────────────────
@@ -531,10 +775,10 @@ function renderPanelProductos() {
                             <p class="text-[10px] text-slate-500 mt-0.5 uppercase font-semibold">${p.categoria || 'General'}</p>
                         </div>
                         <div class="flex items-center justify-between border-t border-white/5 pt-3 mt-auto">
-                            <span class="text-2xl font-black text-blue-400">${p.puntos} <span class="text-xs font-bold text-slate-500">PTS</span></span>
-                            <div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button onclick="editarProducto('${p.id}')" class="px-3 py-1.5 rounded-lg bg-blue-500/10 text-blue-400 text-[10px] font-bold hover:bg-blue-500/20">Editar</button>
-                                <button onclick="confirmarEliminar('${p.id}')" class="px-3 py-1.5 rounded-lg bg-rose-500/10 text-rose-400 text-[10px] font-bold hover:bg-rose-500/20">Eliminar</button>
+                            <span class="text-2xl font-black text-green-500">${p.puntos} <span class="text-xs font-bold text-slate-500">PTS</span></span>
+                            <div class="flex gap-2">
+                                <button onclick="editarProducto('${p.id}')" class="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-blue-800/30 text-slate-400 hover:text-blue-400 text-[10px] font-bold border border-white/5 transition-all">Editar</button>
+                                <button onclick="confirmarEliminar('${p.id}')" class="px-3 py-1.5 rounded-lg bg-rose-500/10 text-rose-400 text-[10px] font-bold hover:bg-rose-500/20 border border-rose-500/10 transition-all">Eliminar</button>
                             </div>
                         </div>
                     </div>
@@ -571,7 +815,6 @@ function abrirFormProducto() {
     document.getElementById("tituloFormProd").textContent    = "Nuevo Producto";
     document.getElementById("btnGuardarProdText").textContent = "Guardar Producto";
     document.getElementById("formProducto").classList.remove("hidden");
-    document.getElementById("formProducto").scrollIntoView({ behavior: 'smooth', block: 'start' });
     document.getElementById("formProdNombre").focus();
 }
 
@@ -593,7 +836,6 @@ function editarProducto(id) {
     document.getElementById("btnGuardarProdText").textContent = "Guardar Cambios";
     previewImagen();
     document.getElementById("formProducto").classList.remove("hidden");
-    document.getElementById("formProducto").scrollIntoView({ behavior: 'smooth', block: 'start' });
     document.getElementById("formProdNombre").focus();
 }
 
@@ -620,8 +862,50 @@ async function guardarProducto() {
 async function confirmarEliminar(id) {
     const p = productos.find(x => x.id === id);
     if (!p) return;
-    if (!confirm(`¿Eliminar "${p.nombre}"?`)) return;
-    await deleteProducto(id);
-    showToast(`"${p.nombre}" eliminado.`, "info");
-    renderPanelProductos();
+    showConfirm({
+        titulo: 'Eliminar producto',
+        mensaje: `¿Estás seguro de eliminar "${p.nombre}"? Esta acción no se puede deshacer.`,
+        tipo: 'danger',
+        labelAceptar: 'Eliminar',
+        onAceptar: async () => {
+            await deleteProducto(id);
+            showToast(`"${p.nombre}" eliminado.`, 'info');
+            renderPanelProductos();
+        }
+    });
+}
+
+// ── LÓGICA DE LÍMITE DIARIO DE CANJES ─────────────────────────────
+function verificarLimiteCanje() {
+    if (!clienteActual) return;
+    const hoy = new Date().toISOString().split('T')[0];
+    
+    let canjesHoy = 0;
+    let anulacionesHoy = 0;
+    
+    // Contamos si hoy tuvo un canje (y restamos si ese canje se anuló por error del cajero)
+    clienteActual.historial.forEach(h => {
+        if (h.fecha === hoy) {
+            if (h.descripcion.startsWith('Canje:')) canjesHoy++;
+            if (h.descripcion.startsWith('Anulación: Canje:')) anulacionesHoy++;
+        }
+    });
+    
+    const yaCanjeo = (canjesHoy - anulacionesHoy) > 0;
+    
+    const contNormal = document.getElementById("contenedorCanjeNormal");
+    const contBloqueo = document.getElementById("mensajeBloqueoCanje");
+    
+    if (contNormal && contBloqueo) {
+        if (yaCanjeo) {
+            contNormal.classList.add("hidden");
+            contBloqueo.classList.remove("hidden");
+        } else {
+            contNormal.classList.remove("hidden");
+            contBloqueo.classList.add("hidden");
+            // Limpiamos los campos por las dudas
+            document.getElementById("selectProductoRestar").value = "";
+            document.getElementById("previewPuntosRestar").classList.add("hidden");
+        }
+    }
 }
