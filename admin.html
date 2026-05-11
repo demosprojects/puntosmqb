@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Puntos | Más Que Burgers</title>
+    <title>Admin Puntos</title>
      <link rel="icon" href="https://imagedelivery.net/ut8GNCA1obOu4JnXrJ_J9Q/e7b59903-06e0-48f8-1bb1-71bd6da8a800/public" type="image/x-icon">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
@@ -59,38 +59,46 @@
 </head>
 <body class="selection:bg-blue-500/30 min-h-screen">
 
-    <!-- Loader de arranque -->
     <div id="global-loader">
         <img src="https://imagedelivery.net/ut8GNCA1obOu4JnXrJ_J9Q/e7b59903-06e0-48f8-1bb1-71bd6da8a800/public"
              alt="Logo" class="w-28 opacity-80">
         <div class="loader-ring"></div>
-        <p class="text-[10px] text-slate-600 uppercase tracking-[0.3em] font-bold">Cargando panel…</p>
+        <p class="text-[10px] text-slate-600 uppercase tracking-[0.3em] font-bold">Verificando sesión</p>
     </div>
 
     <nav class="p-4 lg:px-12 flex justify-between items-center border-b border-white/5 bg-slate-950/80 sticky top-0 z-50 backdrop-blur-md">
         <div class="flex items-center gap-4">
             <img src="https://imagedelivery.net/ut8GNCA1obOu4JnXrJ_J9Q/e7b59903-06e0-48f8-1bb1-71bd6da8a800/public" class="h-10 w-auto" alt="Logo">
             <div class="h-6 w-px bg-white/10 mx-2"></div>
-            <h1 class="text-xl font-black italic uppercase tracking-tighter">Panel de Gestión</h1>
+            <h1 class="text-xl font-black italic uppercase tracking-tighter">Gestión de puntos</h1>
         </div>
         <div class="flex items-center gap-8">
             <button onclick="switchTab('gestion')" id="btn-tab-gestion" class="text-xs font-bold uppercase tracking-widest tab-active pb-1">Gestión</button>
-            <button onclick="switchTab('stock')" id="btn-tab-stock" class="text-xs font-bold uppercase tracking-widest text-slate-500 pb-1">Stock Tarjetas</button>
+            <button onclick="switchTab('stock')" id="btn-tab-stock" class="text-xs font-bold uppercase tracking-widest text-slate-500 pb-1">Tarjetas</button>
             <button onclick="switchTab('productos')" id="btn-tab-productos" class="text-xs font-bold uppercase tracking-widest text-slate-500 pb-1">Productos</button>
+            <div class="h-4 w-px bg-white/10"></div>
+            <button onclick="cerrarSesion()" title="Cerrar sesión"
+                class="flex items-center gap-2 text-slate-500 hover:text-rose-400 transition-colors text-[10px] font-bold uppercase tracking-widest group">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="transition-transform group-hover:translate-x-0.5">
+                    <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Salir
+            </button>
         </div>
     </nav>
 
     <main class="max-w-7xl mx-auto p-8">
         
         <div id="section-gestion" class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            <div class="lg:col-span-4 space-y-6">
-                <div class="glass p-8 rounded-[2rem] space-y-6 border-blue-500/20">
+            <div id="columnaIzquierda" class="lg:col-span-4 space-y-6">
+                <!-- Estado A: sin tarjeta activa — buscar -->
+                <div id="buscarPanel" class="glass p-8 rounded-[2rem] space-y-6 border-blue-500/20">
                     <div>
                         <h2 class="text-lg font-bold uppercase italic mb-2 text-blue-400">Buscar Tarjeta</h2>
                         <p class="text-xs text-slate-500 font-medium">Ingresá el número de la tarjeta física</p>
                     </div>
                     <div class="space-y-4">
-                        <input id="buscarTarjeta" maxlength="8" placeholder="0000 0000" class="w-full p-4 rounded-xl bg-slate-900 border border-slate-800 text-center text-2xl font-bold tracking-[0.2em] outline-none focus:border-blue-600 transition-all text-white">
+                        <input id="buscarTarjeta" type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="9" placeholder="0000 0000" onkeydown="if(event.key==='Enter') buscarCliente()" oninput="this.value=this.value.replace(/[^0-9]/g,'')" class="w-full p-4 rounded-xl bg-slate-900 border border-slate-800 text-center text-2xl font-bold tracking-[0.2em] outline-none focus:border-blue-600 transition-all text-white">
                         <button id="btnBuscar" onclick="buscarCliente()" class="w-full bg-blue-700 hover:bg-blue-600 p-4 rounded-xl font-bold uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-blue-900/20 text-sm flex items-center justify-center gap-2">
                             <span id="btnBuscarText">Validar Tarjeta</span>
                             <div id="btnBuscarSpinner" class="btn-spinner hidden"></div>
@@ -98,25 +106,81 @@
                     </div>
                 </div>
 
-                <div id="clienteResumen" class="hidden animate-in fade-in slide-in-from-top-4 duration-500">
+                <!-- Estado B: tarjeta activa — info + volver -->
+                <div id="activaPanel" class="hidden animate-in fade-in slide-in-from-top-4 duration-500 space-y-4">
+                    <!-- Chip "Estás viendo" -->
+                    <div class="flex items-center gap-2 px-1">
+                        <div class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
+                        <p class="text-[10px] uppercase font-bold text-emerald-400/80 tracking-widest">Tarjeta activa</p>
+                    </div>
+                    <!-- Card cliente -->
                     <div class="card-mini p-6 rounded-[2rem] relative overflow-hidden">
                         <div class="relative z-10">
-                            <p class="text-[10px] uppercase font-bold text-blue-400/60 mb-1">Cliente Activo</p>
+                            <p class="text-[10px] uppercase font-bold text-blue-400/60 mb-1">Estás viendo la tarjeta de</p>
                             <h2 id="adminNombre" class="text-2xl font-black text-white italic truncate uppercase">---</h2>
+
                             <div class="mt-4 flex items-baseline gap-2">
                                 <span id="adminPuntos" class="text-4xl font-black text-white">0</span>
                                 <span class="text-sm font-bold text-slate-500 italic uppercase">Puntos</span>
                             </div>
+
+                            <!-- Teléfono -->
+                            <div class="mt-4 flex items-center gap-3 bg-white/[0.03] border border-white/8 rounded-xl px-4 py-3">
+                                <div class="w-7 h-7 rounded-lg bg-slate-700/60 flex items-center justify-center flex-shrink-0">
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6.62 10.79a15.05 15.05 0 006.59 6.59l2.2-2.2a1 1 0 011.01-.24c1.12.37 2.33.57 3.58.57a1 1 0 011 1V20a1 1 0 01-1 1C10.61 21 3 13.39 3 4a1 1 0 011-1h3.5a1 1 0 011 1c0 1.25.2 2.45.57 3.58a1 1 0 01-.25 1.01l-2.2 2.2z" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-[9px] uppercase font-black text-slate-600 tracking-widest leading-none mb-1">Teléfono</p>
+                                    <p id="adminTelefono" class="text-sm font-bold text-slate-300 tracking-wider truncate">—</p>
+                                </div>
+                                <button onclick="copiarTelefono()" id="btnCopiarTel" title="Copiar teléfono"
+                                    class="w-8 h-8 rounded-lg bg-white/5 hover:bg-emerald-500/20 border border-white/10 hover:border-emerald-500/30 flex items-center justify-center transition-all flex-shrink-0 group">
+                                    <svg id="iconCopy" width="13" height="13" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="text-slate-500 group-hover:text-emerald-400 transition-colors">
+                                        <rect x="9" y="9" width="13" height="13" rx="2" stroke="currentColor" stroke-width="1.8" fill="none"/>
+                                        <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                                    </svg>
+                                    <svg id="iconCheck" class="hidden text-emerald-400" width="13" height="13" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                </button>
+                            </div>
+
+                            <!-- PIN con toggle oculto -->
+                            <div class="mt-2 flex items-center gap-3 bg-blue-500/[0.06] border border-blue-500/15 rounded-xl px-4 py-3">
+                                <div class="w-7 h-7 rounded-lg bg-blue-500/20 flex items-center justify-center flex-shrink-0">
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="5" y="11" width="14" height="10" rx="2" stroke="#60a5fa" stroke-width="1.5" fill="none"/><path d="M8 11V7a4 4 0 018 0v4" stroke="#60a5fa" stroke-width="1.5" stroke-linecap="round"/><circle cx="12" cy="16" r="1.5" fill="#60a5fa"/></svg>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-[9px] uppercase font-black text-blue-400/50 tracking-widest leading-none mb-1">PIN de acceso</p>
+                                    <p id="adminPin" class="text-sm font-mono font-black text-blue-300 tracking-[0.35em]">••••</p>
+                                </div>
+                                <button id="btnVerPin" onclick="togglePin()" title="Ver/ocultar PIN"
+                                    class="w-8 h-8 rounded-lg bg-blue-500/10 hover:bg-blue-500/25 border border-blue-500/20 flex items-center justify-center transition-all flex-shrink-0 group">
+                                    <!-- Ojo cerrado (estado por defecto: PIN oculto) -->
+                                    <svg id="iconOjoAbierto" class="hidden" width="15" height="15" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="#60a5fa" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                                        <circle cx="12" cy="12" r="3" stroke="#60a5fa" stroke-width="1.8"/>
+                                    </svg>
+                                    <svg id="iconOjoCerrado" width="15" height="15" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19M1 1l22 22" stroke="#60a5fa" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                </button>
+                            </div>
                         </div>
                     </div>
+                    <!-- Botón volver al inicio -->
+                    <button onclick="volverAlInicio()" class="w-full flex items-center justify-center gap-2 p-4 rounded-2xl bg-white/[0.03] hover:bg-white/[0.07] border border-white/10 hover:border-white/20 text-slate-400 hover:text-white text-xs font-bold uppercase tracking-widest transition-all group">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="transition-transform group-hover:-translate-x-0.5"><path d="M19 12H5M12 5l-7 7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        Nueva búsqueda
+                    </button>
                 </div>
             </div>
 
-            <div class="lg:col-span-8">
+            <div id="columnaDerecha" class="lg:col-span-8">
+
                 <div id="panelActivacion" class="hidden glass p-10 rounded-[3rem] border-blue-500/20 animate-in zoom-in duration-500">
                     <p class="text-[10px] uppercase font-black tracking-widest text-blue-400/60 mb-6">Nueva Activación</p>
                     
-                    <!-- Tarjeta preview EXACTA al diseño cliente -->
                     <style>
                         .card-premium-prev {
                             background: linear-gradient(145deg, #111827 0%, #020617 100%);
@@ -141,14 +205,12 @@
                     <div class="flex justify-center mb-8">
                         <div class="w-full max-w-[360px]">
                             <div class="card-premium-prev p-7" style="aspect-ratio:1.6/1;display:flex;flex-direction:column;justify-content:space-between;">
-                                <!-- Fila superior: chip + label -->
                                 <div class="relative z-10 flex justify-between items-start">
                                     <div class="card-chip-prev"></div>
                                     <div class="text-right opacity-20">
                                         <p class="text-[8px] font-bold text-white uppercase tracking-[0.4em]">Más que Burgers Card</p>
                                     </div>
                                 </div>
-                                <!-- Puntos -->
                                 <div class="relative z-10">
                                     <p class="text-[10px] uppercase font-bold text-blue-400/50 mb-1 tracking-[0.2em]">Puntos Disponibles</p>
                                     <div class="flex items-baseline gap-2">
@@ -156,7 +218,6 @@
                                         <span class="text-lg font-bold text-white/30 italic">PTS</span>
                                     </div>
                                 </div>
-                                <!-- Fila inferior: nombre + logo -->
                                 <div class="relative z-10 flex justify-between items-end border-t border-white/5 pt-4">
                                     <div class="space-y-1">
                                         <h2 id="previewNombre" class="text-sm font-bold tracking-widest text-white uppercase italic">NOMBRE CLIENTE</h2>
@@ -164,25 +225,27 @@
                                     </div>
                                     <img src="https://imagedelivery.net/ut8GNCA1obOu4JnXrJ_J9Q/e7b59903-06e0-48f8-1bb1-71bd6da8a800/public" class="h-10 w-auto drop-shadow-[0_8px_15px_rgba(0,0,0,0.6)]" alt="Logo">
                                 </div>
-                                <!-- Blur decorativo -->
                                 <div class="absolute -bottom-20 -left-20 w-64 h-64 bg-blue-600/5 rounded-full blur-[100px]"></div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Formulario -->
                     <div class="max-w-sm mx-auto space-y-4">
                         <div class="space-y-1">
                             <label class="text-[10px] uppercase font-bold text-slate-500 ml-2">Nombre del Cliente</label>
-                            <input id="nuevoNombre" placeholder="Ej: Juan Pérez" oninput="actualizarPreviewTarjeta()" class="w-full p-4 rounded-xl bg-slate-900 border border-slate-800 outline-none focus:border-blue-500 text-white transition-all">
+                            <input id="nuevoNombre" placeholder="Ej: Lionel Messi" oninput="actualizarPreviewTarjeta()" class="w-full p-4 rounded-xl bg-slate-900 border border-slate-800 outline-none focus:border-blue-500 text-white transition-all">
                         </div>
                         <div class="space-y-1">
-                            <label class="text-[10px] uppercase font-bold text-slate-500 ml-2">Teléfono / WhatsApp</label>
-                            <input id="nuevoTel" placeholder="Ej: 3644123456" class="w-full p-4 rounded-xl bg-slate-900 border border-slate-800 outline-none focus:border-blue-500 text-white transition-all">
+                            <label class="text-[10px] uppercase font-bold text-slate-500 ml-2">Contacto</label>
+                            <input id="nuevoTel" type="tel" inputmode="numeric" pattern="[0-9]*" placeholder="Ej: 3735121212" oninput="this.value=this.value.replace(/[^0-9]/g,'')" class="w-full p-4 rounded-xl bg-slate-900 border border-slate-800 outline-none focus:border-blue-500 text-white transition-all">
                         </div>
                         <button id="btnActivar" onclick="activarTarjeta()" class="w-full bg-blue-600 hover:bg-blue-500 p-4 rounded-xl font-bold uppercase tracking-widest transition-all mt-2 shadow-lg shadow-blue-900/30 flex items-center justify-center gap-2">
                             <span id="btnActivarText">Activar Tarjeta</span>
                             <div id="btnActivarSpinner" class="btn-spinner hidden"></div>
+                        </button>
+                        <button onclick="volverAlInicio()" class="w-full flex items-center justify-center gap-2 p-3 rounded-xl bg-white/[0.03] hover:bg-white/[0.07] border border-white/10 hover:border-white/20 text-slate-400 hover:text-white text-xs font-bold uppercase tracking-widest transition-all group">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="transition-transform group-hover:-translate-x-0.5"><path d="M19 12H5M12 5l-7 7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            Cancelar
                         </button>
                     </div>
                 </div>
@@ -190,7 +253,6 @@
                 <div id="clienteAcciones" class="hidden space-y-8 animate-in fade-in duration-700">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-                        <!-- Cargar Compra -->
                         <div class="glass p-8 rounded-[2.5rem] border border-emerald-500/10 space-y-4">
                             <h3 class="text-lg font-bold uppercase italic flex items-center gap-2">
                                 <span class="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-500 flex items-center justify-center text-sm font-black">+</span>
@@ -211,28 +273,37 @@
                             </button>
                         </div>
 
-                        <!-- Registrar Canje -->
-                        <div class="glass p-8 rounded-[2.5rem] border border-rose-500/10 space-y-4">
+                        <div class="glass p-8 rounded-[2.5rem] border border-rose-500/10 space-y-4 relative overflow-hidden">
                             <h3 class="text-lg font-bold uppercase italic flex items-center gap-2">
                                 <span class="w-8 h-8 rounded-lg bg-rose-500/20 text-rose-500 flex items-center justify-center text-sm font-black">−</span>
                                 Registrar Canje
                             </h3>
-                            <p class="text-[10px] text-slate-500 font-semibold uppercase -mt-2">Seleccioná el premio que se canjea</p>
-                            <select id="selectProductoRestar" onchange="onSelectProductoRestar()"
-                                class="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 outline-none focus:border-rose-500/50 transition-all text-sm text-white appearance-none cursor-pointer">
-                                <option value="">Seleccioná un premio…</option>
-                            </select>
-                            <div id="previewPuntosRestar" class="hidden bg-rose-500/5 border border-rose-500/20 rounded-xl px-4 py-3 space-y-1">
-                                <div class="flex items-center justify-between">
-                                    <span class="text-[10px] text-slate-400 uppercase font-bold">Puntos a descontar</span>
-                                    <span id="previewPuntosRestarVal" class="font-black text-lg text-rose-400"></span>
+                            
+                            <div id="contenedorCanjeNormal" class="space-y-4">
+                                <p class="text-[10px] text-slate-500 font-semibold uppercase -mt-2">Seleccioná el premio que se canjea</p>
+                                <select id="selectProductoRestar" onchange="onSelectProductoRestar()"
+                                    class="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 outline-none focus:border-rose-500/50 transition-all text-sm text-white appearance-none cursor-pointer">
+                                    <option value="">Seleccioná un premio…</option>
+                                </select>
+                                <div id="previewPuntosRestar" class="hidden bg-rose-500/5 border border-rose-500/20 rounded-xl px-4 py-3 space-y-1">
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-[10px] text-slate-400 uppercase font-bold">Puntos a descontar</span>
+                                        <span id="previewPuntosRestarVal" class="font-black text-lg text-rose-400"></span>
+                                    </div>
+                                    <p id="previewPuntosRestarAviso" class="text-[10px] text-amber-400 font-bold"></p>
                                 </div>
-                                <p id="previewPuntosRestarAviso" class="text-[10px] text-amber-400 font-bold"></p>
+                                <button id="btnRestar" onclick="restarPuntos()" class="w-full bg-rose-600 hover:bg-rose-500 p-3 rounded-xl font-bold uppercase text-[10px] tracking-widest transition-all flex items-center justify-center gap-2">
+                                    <span id="btnRestarText">Debitar</span>
+                                    <div id="btnRestarSpinner" class="btn-spinner hidden"></div>
+                                </button>
                             </div>
-                            <button id="btnRestar" onclick="restarPuntos()" class="w-full bg-rose-600 hover:bg-rose-500 p-3 rounded-xl font-bold uppercase text-[10px] tracking-widest transition-all flex items-center justify-center gap-2">
-                                <span id="btnRestarText">Debitar</span>
-                                <div id="btnRestarSpinner" class="btn-spinner hidden"></div>
-                            </button>
+
+                            <div id="mensajeBloqueoCanje" class="hidden bg-slate-900/80 border border-amber-500/20 rounded-2xl p-5 text-center space-y-2 mt-2">
+                                <div class="w-10 h-10 rounded-full bg-amber-500/10 flex items-center justify-center mx-auto mb-2"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="9" stroke="#fbbf24" stroke-width="1.5" fill="none"/><path d="M12 7v5l3 3" stroke="#fbbf24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+                                <p class="text-xs font-bold text-amber-400 uppercase tracking-widest">Límite Diario Alcanzado</p>
+                                <p class="text-[10px] text-slate-400 font-medium leading-relaxed">El cliente ya realizó un canje el día de hoy. Solo se permite 1 canje por día.</p>
+                            </div>
+
                         </div>
 
                     </div>
@@ -243,7 +314,7 @@
                 </div>
 
                 <div id="noCliente" class="h-[60vh] flex flex-col items-center justify-center glass rounded-[3rem] opacity-50">
-                    <div class="text-6xl mb-4">💳</div>
+                    <div class="mb-4"><svg width="56" height="56" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="5" width="22" height="14" rx="2" stroke="#64748b" stroke-width="1.5" fill="none"/><rect x="1" y="9" width="22" height="3" fill="#64748b"/><rect x="4" y="14" width="4" height="2" rx="0.5" fill="#64748b"/></svg></div>
                     <p class="font-bold uppercase tracking-widest text-sm text-slate-500 text-center">Buscá una tarjeta para<br>comenzar</p>
                 </div>
             </div>
@@ -251,19 +322,17 @@
 
         <div id="section-stock" class="hidden space-y-6 animate-in fade-in duration-500">
 
-    <!-- Header -->
     <div class="flex justify-between items-center">
-        <h2 class="text-2xl font-black italic uppercase">Inventario de Tarjetas</h2>
+        <h2 class="text-2xl font-black italic uppercase">Todas las tarjetas</h2>
         <button onclick="mostrarGenerador()" class="bg-blue-600 px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-blue-500 transition-all shadow-lg shadow-blue-900/20">
-            Generar Nuevo Lote
+            Generar números
         </button>
     </div>
 
-    <!-- Generador lote -->
     <div id="generadorLote" class="hidden glass p-8 rounded-[2rem] border-blue-500/20 animate-in slide-in-from-top-4">
         <div class="flex flex-col md:flex-row items-end gap-4">
             <div class="flex-1 space-y-2">
-                <label class="text-[10px] uppercase font-bold text-slate-500 ml-2">Cantidad de tarjetas a crear</label>
+                <label class="text-[10px] uppercase font-bold text-slate-500 ml-2">Cantidad de números</label>
                 <input id="cantidadGenerar" type="number" placeholder="Ej: 50" class="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 outline-none focus:border-blue-500 text-white font-bold">
             </div>
             <div class="flex gap-2">
@@ -274,13 +343,12 @@
                 <button onclick="ocultarGenerador()" class="bg-slate-800 px-6 py-3 rounded-xl text-xs font-bold uppercase tracking-widest">Cancelar</button>
             </div>
         </div>
-        <p class="mt-4 text-[10px] text-slate-500 italic">El sistema generará números únicos de 8 dígitos que no existan actualmente.</p>
+       
     </div>
 
-    <!-- Buscador + Filtros -->
     <div class="flex flex-col md:flex-row gap-4 items-stretch md:items-center">
         <div class="flex-1 relative">
-            <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 text-sm">🔍</span>
+            <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 flex items-center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/><path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>
             <input id="stockBuscador" oninput="renderStock()" placeholder="Buscar por nombre, número o teléfono..." 
                 class="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-900 border border-slate-800 outline-none focus:border-blue-500 text-white text-sm transition-all">
         </div>
@@ -291,10 +359,8 @@
         </div>
     </div>
 
-    <!-- Contador -->
     <p id="stockContador" class="text-[10px] text-slate-500 font-bold uppercase tracking-widest px-1"></p>
 
-    <!-- Tabla -->
     <div class="glass rounded-[2rem] overflow-hidden border border-white/5">
         <table class="w-full">
             <thead>
@@ -304,6 +370,7 @@
                     <th class="p-5 text-left text-[10px] font-black uppercase tracking-widest text-slate-500">Cliente</th>
                     <th class="p-5 text-left text-[10px] font-black uppercase tracking-widest text-slate-500">Contacto</th>
                     <th class="p-5 text-left text-[10px] font-black uppercase tracking-widest text-slate-500">Puntos</th>
+                    <th class="p-5 text-left text-[10px] font-black uppercase tracking-widest text-slate-500">Acciones</th>
                 </tr>
             </thead>
             <tbody id="tablaStock"></tbody>
@@ -313,7 +380,6 @@
 
     </div>
 
-    <!-- ══ SECCIÓN PRODUCTOS ══════════════════════════════════════ -->
     <div id="section-productos" class="hidden space-y-6 animate-in fade-in duration-500" style="display:none !important">
 
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -326,26 +392,24 @@
             </button>
         </div>
 
-        <!-- Formulario inline -->
         <div id="formProducto" class="hidden glass p-8 rounded-[2rem] border border-blue-500/20 animate-in slide-in-from-top-4 duration-300">
             <div class="flex items-center justify-between mb-6">
                 <p id="tituloFormProd" class="text-sm font-black uppercase tracking-widest text-blue-400">Nuevo Producto</p>
-                <button onclick="cerrarFormProducto()" class="text-slate-500 hover:text-white text-xs font-bold bg-white/5 px-3 py-1.5 rounded-lg border border-white/5">✕ Cerrar</button>
+                <button onclick="cerrarFormProducto()" class="text-slate-500 hover:text-white text-xs font-bold bg-white/5 px-3 py-1.5 rounded-lg border border-white/5"class="flex items-center gap-1"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-                <!-- Columna izquierda: datos -->
                 <div class="space-y-4">
                     <div class="grid grid-cols-2 gap-4">
                         <div class="space-y-1 col-span-2">
                             <label class="text-[10px] uppercase font-bold text-slate-500 ml-1">Nombre del producto *</label>
-                            <input id="formProdNombre" placeholder="Ej: Blue Simple, Papas Grandes…"
+                            <input id="formProdNombre" placeholder="Ej: American doble"
                                 class="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 outline-none focus:border-blue-500 text-white text-sm transition-all">
                         </div>
                         <div class="space-y-1">
                             <label class="text-[10px] uppercase font-bold text-slate-500 ml-1">Categoría</label>
-                            <input id="formProdCategoria" placeholder="Ej: Hamburguesas…"
+                            <input id="formProdCategoria" placeholder="Ej: Burgers, Papas, Kids"
                                 class="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 outline-none focus:border-blue-500 text-white text-sm transition-all">
                         </div>
                         <div class="space-y-1">
@@ -357,7 +421,7 @@
                             <label class="text-[10px] uppercase font-bold text-slate-500 ml-1">Tipo</label>
                             <select id="formProdCanjeable"
                                 class="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 outline-none focus:border-blue-500 text-white text-sm transition-all appearance-none cursor-pointer">
-                                <option value="true">Suma Y canjeable (aparece en ambos paneles)</option>
+                                <option value="true">Suma y es canjeable (aparece en ambos paneles)</option>
                                 <option value="false">Solo suma puntos (no aparece en Canje)</option>
                             </select>
                         </div>
@@ -369,7 +433,6 @@
                     </button>
                 </div>
 
-                <!-- Columna derecha: imagen -->
                 <div class="space-y-3">
                     <div class="space-y-1">
                         <label class="text-[10px] uppercase font-bold text-slate-500 ml-1">URL de imagen</label>
@@ -378,7 +441,6 @@
                             class="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 outline-none focus:border-blue-500 text-white text-sm transition-all">
                         <p class="text-[10px] text-slate-600 ml-1 italic">Pegá la URL directa de la foto del producto.</p>
                     </div>
-                    <!-- Preview de imagen -->
                     <div id="imgPreviewBox" class="w-full aspect-video rounded-2xl border border-white/5 bg-slate-900 overflow-hidden flex items-center justify-center">
                         <span id="imgPreviewPlaceholder" class="text-slate-700 text-xs font-bold uppercase tracking-widest">Vista previa</span>
                         <img id="imgPreview" src="" alt="Preview" class="hidden w-full h-full object-cover"
@@ -389,27 +451,23 @@
             </div>
         </div>
 
-        <!-- Grid de productos -->
         <div id="listaProductos" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"></div>
 
     </div>
 
     </main>
 
-    <!-- ══ MODAL EDITAR TARJETA ════════════════════════════════════ -->
     <div id="modalEditarTarjeta" class="hidden fixed inset-0 z-[99997] flex items-center justify-center p-6" style="background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);">
         <div class="glass rounded-[2rem] p-8 w-full max-w-md space-y-6 border border-white/10" style="background:rgba(5,5,8,0.97);">
 
-            <!-- Header -->
             <div class="flex items-start justify-between">
                 <div>
                     <h2 class="text-lg font-black uppercase italic tracking-tighter">Editar Tarjeta</h2>
                     <p id="modalEditarNumero" class="text-xs text-blue-400 font-mono mt-1 tracking-widest"></p>
                 </div>
-                <button onclick="cerrarModalEditar()" class="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-all text-sm">✕</button>
+                <button onclick="cerrarModalEditar()" class="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-all text-sm"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
             </div>
 
-            <!-- Datos personales -->
             <div class="space-y-4">
                 <p class="text-[10px] uppercase font-black text-slate-500 tracking-widest">Datos del cliente</p>
                 <div class="space-y-3">
@@ -420,13 +478,12 @@
                     </div>
                     <div>
                         <label class="text-[10px] uppercase font-bold text-slate-500 ml-1 block mb-1.5">Teléfono</label>
-                        <input id="editTelefono" type="text" placeholder="Número de teléfono"
+                        <input id="editTelefono" type="tel" inputmode="numeric" pattern="[0-9]*" placeholder="Número de teléfono" oninput="this.value=this.value.replace(/[^0-9]/g,'')"
                             class="w-full p-3.5 rounded-xl bg-slate-900 border border-slate-800 text-sm font-bold outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10 transition-all text-white placeholder:text-slate-700">
                     </div>
                 </div>
             </div>
 
-            <!-- Último movimiento -->
             <div id="editUltimoMov" class="hidden space-y-3">
                 <div class="border-t border-white/5 pt-5">
                     <p class="text-[10px] uppercase font-black text-slate-500 tracking-widest mb-3">Último movimiento</p>
@@ -451,30 +508,27 @@
                 </div>
             </div>
 
-            <!-- Sin movimientos -->
             <div id="editSinMov" class="hidden border-t border-white/5 pt-5">
                 <p class="text-[10px] uppercase font-black text-slate-500 tracking-widest mb-2">Último movimiento</p>
                 <p class="text-xs text-slate-600 italic">Esta tarjeta no tiene movimientos registrados.</p>
             </div>
 
-            <!-- Acciones -->
-            <div class="flex gap-3 pt-1">
-                <button onclick="cerrarModalEditar()" class="flex-1 bg-white/5 hover:bg-white/10 p-3 rounded-xl font-bold text-xs uppercase tracking-widest text-slate-400 transition-all border border-white/5">
+            <div class="flex gap-2 pt-1">
+                <button onclick="cerrarModalEditar()" class="flex-1 bg-white/5 hover:bg-white/10 p-3 rounded-xl font-bold text-[10px] uppercase tracking-widest text-slate-400 transition-all border border-white/5">
                     Cancelar
                 </button>
-                <button onclick="guardarEdicionTarjeta()" class="flex-1 bg-blue-600 hover:bg-blue-500 p-3 rounded-xl font-bold text-xs uppercase tracking-widest transition-all shadow-lg shadow-blue-900/20 flex items-center justify-center gap-2">
-                    <span id="btnGuardarEditText">Guardar Cambios</span>
+                <button onclick="guardarEdicionTarjeta()" class="flex-1 bg-blue-600 hover:bg-blue-500 p-3 rounded-xl font-bold text-[10px] uppercase tracking-widest transition-all shadow-lg shadow-blue-900/20 flex items-center justify-center gap-2">
+                    <span id="btnGuardarEditText">Guardar</span>
                     <div id="btnGuardarEditSpinner" class="btn-spinner hidden"></div>
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- ══ MODAL PIN DUEÑO ══════════════════════════════════════ -->
     <div id="modalPin" class="hidden fixed inset-0 z-[99998] flex items-center justify-center p-6" style="background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);">
         <div class="glass rounded-[2rem] p-10 w-full max-w-sm space-y-6 border border-blue-500/20 animate-in zoom-in duration-300" style="background:rgba(5,5,8,0.95);">
             <div class="text-center space-y-2">
-                <div class="w-14 h-14 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-2xl mx-auto">🔐</div>
+                <div class="w-14 h-14 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center mx-auto"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="5" y="11" width="14" height="10" rx="2" stroke="#60a5fa" stroke-width="1.5" fill="none"/><path d="M8 11V7a4 4 0 018 0v4" stroke="#60a5fa" stroke-width="1.5" stroke-linecap="round"/><circle cx="12" cy="16" r="1.5" fill="#60a5fa"/></svg></div>
                 <h2 class="text-lg font-black uppercase italic tracking-tighter">Acceso Restringido</h2>
                 <p class="text-xs text-slate-500 font-medium">Esta sección es solo para el administrador.</p>
             </div>
@@ -500,12 +554,55 @@
         </div>
     </div>
 
+    <div id="modalPinActivacion" class="hidden fixed inset-0 z-[99999] flex items-center justify-center p-6" style="background:rgba(0,0,0,0.8);backdrop-filter:blur(8px);">
+        <div class="glass rounded-[2rem] p-10 w-full max-w-sm space-y-6 border border-blue-500/20 animate-in zoom-in duration-300 text-center" style="background:rgba(5,5,8,0.97);">
+            <div class="w-16 h-16 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center mx-auto">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="5" y="11" width="14" height="10" rx="2" stroke="#60a5fa" stroke-width="1.5" fill="none"/><path d="M8 11V7a4 4 0 018 0v4" stroke="#60a5fa" stroke-width="1.5" stroke-linecap="round"/><circle cx="12" cy="16" r="1.5" fill="#60a5fa"/></svg>
+            </div>
+            <div>
+                <h2 class="text-2xl font-black uppercase italic tracking-tighter text-white">Tarjeta Activada</h2>
+                <p class="text-xs text-slate-500 font-medium mt-1">El cliente <b id="modalPinNombre" class="text-slate-300"></b> ya puede acceder.</p>
+            </div>
+
+            <div class="bg-slate-900/80 rounded-2xl p-6 border border-white/5 shadow-inner space-y-2">
+                <p class="text-[10px] uppercase font-black text-slate-500 tracking-widest">PIN de acceso</p>
+                <p id="modalPinGenerado" class="text-5xl font-mono font-black text-white tracking-[0.25em]"></p>
+                <p class="text-[10px] text-slate-600 italic">Anotá o compartí este código con el cliente.</p>
+            </div>
+
+            <button onclick="cerrarModalPinActivacion()" class="w-full bg-blue-600 hover:bg-blue-500 p-4 rounded-xl font-bold text-xs uppercase tracking-widest transition-all shadow-lg shadow-blue-900/20">
+                Aceptar
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal de Confirmación Custom (reemplaza a confirm()) -->
+    <div id="modalConfirm" class="hidden fixed inset-0 z-[99999] flex items-center justify-center p-6" style="background:rgba(0,0,0,0.75);backdrop-filter:blur(8px);">
+        <div class="glass rounded-[2rem] p-8 w-full max-w-sm space-y-6 border border-white/10 animate-in zoom-in duration-300" style="background:rgba(5,5,8,0.97);">
+            <div class="flex flex-col items-center text-center gap-3">
+                <div id="modalConfirmIcono" class="w-14 h-14 rounded-2xl flex items-center justify-center">
+                    <!-- ícono dinámico -->
+                </div>
+                <h2 id="modalConfirmTitulo" class="text-base font-black uppercase italic tracking-tighter text-white"></h2>
+                <p id="modalConfirmMensaje" class="text-xs text-slate-400 font-medium leading-relaxed"></p>
+            </div>
+            <div class="flex gap-3 pt-1">
+                <button id="modalConfirmCancelar" class="flex-1 bg-white/5 hover:bg-white/10 p-3 rounded-xl font-bold text-xs uppercase tracking-widest text-slate-400 transition-all border border-white/5">
+                    Cancelar
+                </button>
+                <button id="modalConfirmAceptar" class="flex-1 p-3 rounded-xl font-bold text-xs uppercase tracking-widest transition-all shadow-lg flex items-center justify-center">
+                    Confirmar
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
     <script src="db.js"></script>
     <script src="admin.js"></script>
-    <!-- Toast container -->
     <div id="toast-container" style="position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);z-index:9999;display:flex;flex-direction:column;gap:0.75rem;align-items:center;pointer-events:none;"></div>
 
     <style>
@@ -536,7 +633,12 @@
 
     <script>
         function showToast(message, type = 'info', duration = 4000) {
-            const icons = { error: '⚠️', success: '✓', info: 'ℹ', warn: '!' };
+            const icons = {
+                error:   '<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+                success: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+                info:    '<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/><path d="M12 16v-4M12 8h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
+                warn:    '<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/><path d="M12 8v4M12 16h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>'
+            };
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
             toast.className = `toast toast-${type}`;
