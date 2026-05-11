@@ -97,3 +97,17 @@ async function deleteProducto(id) {
     console.error("Error eliminando producto:", error);
   }
 }
+
+// Buscar usuario por su PIN de 4 dígitos
+async function getUsuarioByPin(pin) {
+  try {
+    const snapshot = await db.collection("usuarios").where("pin", "==", pin).limit(1).get();
+    if (!snapshot.empty) {
+      return snapshot.docs[0].data();
+    }
+    return null;
+  } catch (error) {
+    console.error("Error buscando por PIN:", error);
+    return null;
+  }
+}
