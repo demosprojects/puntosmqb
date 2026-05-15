@@ -24,25 +24,32 @@
   ],
   "screenshots": [
     {
-      "src": "https://res.cloudinary.com/dl2tftoum/image/upload/v1778816500/kwouobgc80y4y1y1cqca.webp",
-      "sizes": "390x844",
+      "src": "https://res.cloudinary.com/dl2tftoum/image/upload/v1778827379/m1v2npkayeuvqwurxwil.webp",
+      "sizes": "1080x2340",
       "type": "image/webp",
       "form_factor": "narrow",
       "label": "Pantalla de acceso con PIN"
     },
     {
-      "src": "https://res.cloudinary.com/dl2tftoum/image/upload/v1778824541/qjk9ki5hlfwmcsjhr45n.webp",
-      "sizes": "390x844",
+      "src": "https://res.cloudinary.com/dl2tftoum/image/upload/v1778827401/zucs0t8mvnt6jrwc7tcc.webp",
+      "sizes": "1080x2340",
       "type": "image/webp",
       "form_factor": "narrow",
       "label": "Dashboard con tus puntos y premios"
     },
     {
-      "src": "https://res.cloudinary.com/dl2tftoum/image/upload/v1778824586/wpqfjcgqjtyixtexgs3u.webp",
-      "sizes": "390x844",
+      "src": "https://res.cloudinary.com/dl2tftoum/image/upload/v1778827416/twpanyh8pnh6cpervrso.webp",
+      "sizes": "1080x2340",
       "type": "image/webp",
       "form_factor": "narrow",
-      "label": "Canjes disponibles e historial"
+      "label": "Canjes disponibles"
+    },
+     {
+      "src": "https://res.cloudinary.com/dl2tftoum/image/upload/v1778827459/z9mo5jxitvy6vvcshzhm.webp",
+      "sizes": "1080x2340",
+      "type": "image/webp",
+      "form_factor": "narrow",
+      "label": "Tu actividad"
     }
   ],
   "categories": ["food", "lifestyle", "shopping"],
