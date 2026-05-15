@@ -2,7 +2,7 @@
   "name": "Más que Burgers — Puntos",
   "short_name": "MQB Puntos",
   "description": "Consultá tus puntos y canjeá premios en Más que Burgers.",
-  "start_url": "/index.html",
+  "start_url": "./index.html",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#050508",
