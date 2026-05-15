@@ -53,14 +53,25 @@
 
         /* CARD 3D */
         .card-container { perspective: 1200px; width: 100%; }
-        .card-premium {
-            background: linear-gradient(145deg, #111827 0%, #020617 100%);
-            box-shadow: 0 40px 80px -15px rgba(0,0,0,0.9);
-            transform-style: preserve-3d;
-            transition: transform 0.12s ease-out;
-            border: 1px solid rgba(255,255,255,0.1);
-            position: relative; overflow: hidden;
-        }
+       .card-premium {
+    /* El fondo azul corporativo profundo */
+    background: linear-gradient(145deg, #1e3a8a 0%, #020617 100%);
+    
+    /* El borde azulado que le da el toque de luz */
+    border: 1px solid rgba(37, 99, 235, 0.4);
+    
+    /* Sombras combinadas: Resplandor exterior azul + Brillo interior blanco 3D */
+    box-shadow: 
+        0 20px 50px -10px rgba(37, 99, 235, 0.3), 
+        0 0 15px rgba(37, 99, 235, 0.15), 
+        inset 0 1px 2px rgba(255, 255, 255, 0.15);
+        
+    /* Propiedades de estructura que ya tenías */
+    transform-style: preserve-3d;
+    transition: transform 0.12s ease-out;
+    position: relative; 
+    overflow: hidden;
+}
         .card-premium::before {
             content: ""; position: absolute; inset: 0;
             background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
@@ -143,12 +154,20 @@
 
         /* SALUDO CHIP */
         .saludo-chip {
-            display: inline-flex; align-items: center; gap: 7px;
+            display: inline-flex; align-items: center; gap: 8px;
             background: rgba(255,255,255,0.04);
             border: 1px solid rgba(255,255,255,0.07);
             border-radius: 999px;
-            padding: 4px 12px;
-            font-size: 10px; font-weight: 700; color: #94a3b8;
+            padding: 6px 16px;
+            font-size: 14px; font-weight: 700; color: #94a3b8;
+        }
+        @media (min-width: 640px) {
+            .saludo-chip {
+                font-size: 18px;
+                padding: 8px 20px;
+                gap: 10px;
+            }
+            .hora-dot { width: 8px; height: 8px; }
         }
         .hora-dot {
             width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
@@ -240,7 +259,93 @@
             from { opacity: 0; transform: translateX(-50%) translateY(16px); }
             to   { opacity: 1; transform: translateX(-50%) translateY(0); }
         }
+
+        /* MODAL ACTIVIDAD */
+        #actividadOverlay {
+            position: fixed; inset: 0; z-index: 1000;
+            background: rgba(5,5,8,0.72);
+            backdrop-filter: blur(8px);
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.3s ease;
+            display: flex; align-items: flex-end; justify-content: center;
+        }
+        @media (min-width: 640px) {
+            #actividadOverlay { align-items: center; }
+        }
+        #actividadOverlay.open { opacity: 1; pointer-events: all; }
+
+        #actividadPanel {
+            width: 100%; max-width: 560px;
+            background: #0d0d14;
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 2rem 2rem 0 0;
+            max-height: 85vh;
+            display: flex; flex-direction: column;
+            transform: translateY(100%);
+            transition: transform 0.4s cubic-bezier(.22,1,.36,1);
+            overflow: hidden;
+            box-shadow: 0 -20px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(37,99,235,0.08);
+        }
+        @media (min-width: 640px) {
+            #actividadPanel {
+                border-radius: 2rem;
+                max-height: 78vh;
+                transform: translateY(20px) scale(0.96);
+                box-shadow: 0 40px 100px rgba(0,0,0,0.7), 0 0 0 1px rgba(37,99,235,0.1);
+            }
+        }
+        #actividadOverlay.open #actividadPanel {
+            transform: translateY(0) scale(1);
+        }
+
+        .drag-handle {
+            width: 36px; height: 4px; border-radius: 99px;
+            background: rgba(255,255,255,0.1);
+            margin: 14px auto 0; flex-shrink: 0;
+        }
+        @media (min-width: 640px) { .drag-handle { display: none; } }
+
+        .actividad-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 18px 20px 14px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            flex-shrink: 0;
+        }
+        .actividad-body {
+            overflow-y: auto; flex: 1;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255,255,255,0.06) transparent;
+        }
+        .actividad-body::-webkit-scrollbar { width: 3px; }
+        .actividad-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.07); border-radius: 4px; }
+
+        /* BOTÓN NAV ACTIVIDAD */
+        .btn-actividad {
+            display: flex; align-items: center; gap: 5px;
+            font-size: 9px; font-weight: 800; letter-spacing: 0.08em;
+            text-transform: uppercase;
+            background: rgba(37,99,235,0.08);
+            border: 1px solid rgba(37,99,235,0.22);
+            color: #60a5fa;
+            padding: 7px 11px; border-radius: 11px;
+            cursor: pointer;
+            transition: background 0.2s, border-color 0.2s, color 0.2s;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .btn-actividad:hover {
+            background: rgba(37,99,235,0.16);
+            border-color: rgba(37,99,235,0.4);
+            color: #93c5fd;
+        }
+        @media (min-width: 640px) {
+            .btn-actividad { font-size: 10px; padding: 8px 14px; gap: 6px; }
+        }
     </style>
+    <script>
+        function imgFallback(el) {
+            el.parentElement.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#334155" stroke-width="1.8"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>';
+        }
+    </script>
 </head>
 <body>
 
@@ -314,6 +419,12 @@
     <nav class="px-4 sm:px-6 lg:px-12 py-3 flex justify-between items-center border-b border-white/5 bg-slate-950/80 sticky top-0 z-50 backdrop-blur-md">
         <img src="https://imagedelivery.net/ut8GNCA1obOu4JnXrJ_J9Q/e7b59903-06e0-48f8-1bb1-71bd6da8a800/public" class="h-7 sm:h-8 w-auto" alt="Logo">
         <div class="flex items-center gap-2 sm:gap-3">
+            <button onclick="abrirActividad()" class="btn-actividad">
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                </svg>
+                Actividad
+            </button>
             <button onclick="logout()" class="text-slate-500 hover:text-white text-[9px] sm:text-[10px] font-bold bg-white/[0.03] hover:bg-white/[0.06] px-3 py-2 rounded-xl uppercase tracking-wider border border-white/5 transition-all">Salir</button>
         </div>
     </nav>
@@ -338,7 +449,7 @@
 
                 <!-- TARJETA 3D -->
                 <div class="card-container anim-fadein delay-2" id="scene">
-                    <div class="mx-auto w-full max-w-[300px] sm:max-w-[340px] lg:max-w-full">
+                    <div class="mx-auto w-full max-w-[360px] sm:max-w-[380px] lg:max-w-full">
                         <div id="card" class="card-premium rounded-[1.6rem] p-4 sm:p-6 aspect-[1.6/1] flex flex-col justify-between">
                             <div class="card-glare"></div>
 
@@ -472,23 +583,37 @@
                     <div id="premiosContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3"></div>
                 </section>
 
-                <!-- ACTIVIDAD -->
-                <section class="anim-fadein delay-3">
-                    <h3 class="text-sm sm:text-base font-black uppercase italic mb-3">Actividad Reciente</h3>
-                    <div class="bg-slate-900/30 border border-white/5 rounded-2xl sm:rounded-[2rem] overflow-hidden">
-                        <div id="historialContainer"></div>
-                        <button id="verMasBtn" class="ver-mas-btn hidden" onclick="toggleHistorial()">
-                            <span id="verMasLabel">Ver todo el historial</span>
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/>
-                            </svg>
-                        </button>
-                    </div>
-                </section>
-
             </div>
         </div>
     </main>
+</div>
+
+<!-- MODAL ACTIVIDAD -->
+<div id="actividadOverlay" onclick="cerrarActividadOverlay(event)">
+    <div id="actividadPanel">
+        <div class="drag-handle"></div>
+        <div class="actividad-header">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl flex items-center justify-center bg-blue-600/10 border border-blue-500/20 flex-shrink-0">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                    </svg>
+                </div>
+                <div>
+                    <h2 class="font-black text-sm text-white tracking-tight">Actividad</h2>
+                    <p class="text-[10px] text-slate-500 font-semibold" id="actividadSubtitulo">Historial de movimientos</p>
+                </div>
+            </div>
+            <button onclick="cerrarActividad()" class="w-8 h-8 rounded-full flex items-center justify-center bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] transition-all text-slate-400 hover:text-white">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        <div class="actividad-body">
+            <div id="historialContainer"></div>
+        </div>
+    </div>
 </div>
 
 <!-- FIREBASE + APP -->
@@ -511,67 +636,93 @@
         document.getElementById('pinBtn').classList.toggle('active', pinVisible);
     }
 
-    /* SALUDO — horario de atención 19:00 a 01:00 */
+    /* SALUDO — horario de atención 19:00 a 01:45 */
     function obtenerSaludo() {
         const h = new Date().getHours();
+        const m = new Date().getMinutes();
 
-        // Abierto: 19:00 a 00:59
-        if (h === 0) {
-            return { texto: '¡Aún abrimos!', motiv: 'Todavía estás a tiempo de pasar' };
-        }
-        if (h >= 19) {
-            const abiertos = [
-                { texto: '¡Abrimos!',         motiv: 'Esta noche venís a comer 🍔' },
-                { texto: 'Esta noche,',        motiv: '¿Te mandamos una burger?' },
-                { texto: 'Buenas noches',      motiv: 'La noche pide una burger' },
-                { texto: '¡Estamos abiertos!', motiv: 'Pasá a sumar puntos esta noche' },
+        // Madrugada abierta: 00:00 a 01:45
+        if (h === 0 || (h === 1 && m <= 45)) {
+            const madrugada = [
+                { texto: 'Buenas noches', motiv: 'Todavía abrimos, pasá a sumar puntos' },
+                { texto: '¡Aún abrimos!', motiv: 'Última chance de la noche 🍔' },
             ];
-            return abiertos[Math.floor(Math.random() * abiertos.length)];
+            return madrugada[Math.floor(Math.random() * madrugada.length)];
         }
 
-        // Cerrado: 01:00 a 18:59
-        if (h >= 6  && h < 12) return { texto: 'Buenos días',   motiv: 'Esta noche abrimos desde las 19 h' };
+        // Cerrado madrugada tardía: 01:46 a 05:59
+        if (h >= 2 && h < 6) return { texto: 'Buenas noches', motiv: 'Abrimos esta noche desde las 19 h' };
+
+        // Mañana: 06:00 a 11:59
+        if (h >= 6 && h < 12) return { texto: 'Buenos días',   motiv: 'Esta noche abrimos desde las 19 h 🍔' };
+
+        // Mediodía: 12:00 a 14:59
         if (h >= 12 && h < 15) return { texto: 'Buen mediodía', motiv: 'Guardá el hambre para la noche 🍔' };
-        return                         { texto: 'Buenas tardes', motiv: 'Ya casi es hora — abrimos a las 19' };
+
+        // Tarde cerrado: 15:00 a 18:59
+        if (h >= 15 && h < 19) return { texto: 'Buenas tardes', motiv: 'Ya casi es hora — abrimos a las 19 🍔' };
+
+        // Noche abierta: 19:00 a 23:59
+        const abiertos = [
+            { texto: '¡Abrimos!',         motiv: 'Esta noche venís a comer 🍔' },
+            { texto: 'Esta noche,',        motiv: '¿Te mandamos una burger?' },
+            { texto: 'Buenas noches',      motiv: 'La noche pide una burger 🍔' },
+            { texto: '¡Estamos abiertos!', motiv: 'Pasá a sumar puntos esta noche' },
+        ];
+        return abiertos[Math.floor(Math.random() * abiertos.length)];
     }
 
-    /* HISTORIAL */
-    const HISTORIAL_PREVIEW = 3;
-    let historialExpandido = false;
-
-    function toggleHistorial() {
-        historialExpandido = !historialExpandido;
-        document.querySelectorAll('.historial-item.extra').forEach(el => {
-            el.classList.toggle('hidden-item', !historialExpandido);
-        });
-        document.getElementById('verMasBtn').classList.toggle('expanded', historialExpandido);
-        document.getElementById('verMasLabel').textContent = historialExpandido ? 'Mostrar menos' : 'Ver todo el historial';
+    /* ACTIVIDAD MODAL */
+    function abrirActividad() {
+        document.getElementById('actividadOverlay').classList.add('open');
+        document.body.style.overflow = 'hidden';
     }
+    function cerrarActividad() {
+        document.getElementById('actividadOverlay').classList.remove('open');
+        document.body.style.overflow = '';
+    }
+    function cerrarActividadOverlay(e) {
+        if (e.target === document.getElementById('actividadOverlay')) cerrarActividad();
+    }
+    // Cerrar con Escape
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarActividad(); });
 
     /* OVERRIDE renderHistorial */
     window.renderHistorial = function() {
         const container = document.getElementById('historialContainer');
         container.innerHTML = '';
-        const btn  = document.getElementById('verMasBtn');
         const logs = [...usuarioActual.historial].reverse();
 
+        // Subtítulo con conteo
+        const sub = document.getElementById('actividadSubtitulo');
+        if (sub) sub.textContent = logs.length > 0
+            ? `${logs.length} movimiento${logs.length !== 1 ? 's' : ''} registrado${logs.length !== 1 ? 's' : ''}`
+            : 'Sin movimientos aún';
+
         if (logs.length === 0) {
-            container.innerHTML = `<p class="text-center text-slate-600 text-xs italic p-8">Todavía no hay actividad registrada.</p>`;
-            btn.classList.add('hidden');
+            container.innerHTML = `
+                <div class="flex flex-col items-center justify-center py-16 px-6 text-center gap-3">
+                    <div class="w-14 h-14 rounded-2xl bg-slate-800/60 border border-white/5 flex items-center justify-center mb-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#334155" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                        </svg>
+                    </div>
+                    <p class="text-slate-500 text-sm font-bold">Sin actividad registrada</p>
+                    <p class="text-slate-600 text-xs">Tus movimientos de puntos aparecerán acá</p>
+                </div>`;
             return;
         }
 
         logs.forEach((h, index) => {
-            const esSuma  = h.puntos > 0;
-            const esExtra = index >= HISTORIAL_PREVIEW;
+            const esSuma = h.puntos > 0;
             const div = document.createElement('div');
-            div.className = `historial-item flex justify-between items-center px-4 py-3 sm:px-5 sm:py-4 ${index !== logs.length - 1 ? 'border-b border-white/5' : ''} ${esExtra ? 'extra hidden-item' : ''}`;
+            div.className = `historial-item flex justify-between items-center px-5 py-4 ${index !== logs.length - 1 ? 'border-b border-white/[0.04]' : ''}`;
             div.innerHTML = `
-                <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${esSuma ? 'bg-emerald-500/10' : 'bg-rose-500/10'}">
+                <div class="flex items-center gap-3.5">
+                    <div class="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${esSuma ? 'bg-emerald-500/10' : 'bg-rose-500/10'}">
                         ${esSuma
-                            ? `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>`
-                            : `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#f43f5e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>`
+                            ? `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>`
+                            : `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f43f5e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>`
                         }
                     </div>
                     <div>
@@ -584,8 +735,6 @@
                 </span>`;
             container.appendChild(div);
         });
-
-        btn.classList.toggle('hidden', logs.length <= HISTORIAL_PREVIEW);
     };
 
     /* OVERRIDE renderPremios — compacto en mobile */
@@ -605,7 +754,7 @@
             div.innerHTML = `
                 <div class="flex gap-3 items-start">
                     <div class="w-12 h-12 sm:w-16 sm:h-16 flex-shrink-0 overflow-hidden rounded-xl border border-white/10 bg-slate-800 flex items-center justify-center">
-                        ${tieneImagen ? `<img src="${p.imagen}" alt="${p.nombre}" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML='${fallbackSVG}'">` : fallbackSVG}
+                        ${tieneImagen ? `<img src="${p.imagen}" alt="${p.nombre}" class="w-full h-full object-cover" onerror="imgFallback(this)">` : fallbackSVG}
                     </div>
                     <div class="min-w-0">
                         <h4 class="font-bold text-xs sm:text-sm text-white leading-tight">${p.nombre}</h4>
@@ -636,14 +785,6 @@
         document.getElementById('motivationalText').textContent =
             usuarioActual.puntos < 100  ? 'Ya casi llegás a tu primer canje' :
             usuarioActual.puntos >= 3000 ? 'Sos de los mejores clientes'     : sal.motiv;
-
-        const logs = usuarioActual.historial || [];
-        const mCont = document.getElementById('movimientosContainer');
-        if (logs.length > 0) {
-            mCont.classList.remove('hidden');
-            document.getElementById('movimientosText').textContent =
-                `${logs.length} movimiento${logs.length !== 1 ? 's' : ''} registrado${logs.length !== 1 ? 's' : ''}`;
-        }
 
         renderProgreso();
         renderPremios();
