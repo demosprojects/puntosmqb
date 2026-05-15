@@ -26,25 +26,24 @@
     {
       "src": "https://res.cloudinary.com/dl2tftoum/image/upload/v1778816500/kwouobgc80y4y1y1cqca.webp",
       "sizes": "390x844",
-      "type": "image/png",
+      "type": "image/webp",
       "form_factor": "narrow",
       "label": "Pantalla de acceso con PIN"
     },
     {
       "src": "https://res.cloudinary.com/dl2tftoum/image/upload/v1778816517/bc6pnujfnkygr1y2th0t.webp",
       "sizes": "390x844",
-      "type": "image/png",
+      "type": "image/webp",
       "form_factor": "narrow",
       "label": "Dashboard con tus puntos y premios"
     },
-     {
+    {
       "src": "https://res.cloudinary.com/dl2tftoum/image/upload/v1778816553/v8rlsclx68e7jfpvjejj.webp",
       "sizes": "390x844",
-      "type": "image/png",
+      "type": "image/webp",
       "form_factor": "narrow",
-      "label": "Canjes disponibles e historial."
+      "label": "Canjes disponibles e historial"
     }
-
   ],
   "categories": ["food", "lifestyle", "shopping"],
   "prefer_related_applications": false
