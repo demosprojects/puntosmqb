@@ -1,5 +1,5 @@
 // sw.js — Service Worker para Más que Burgers Puntos
-const CACHE_NAME = 'mqb-puntos-v1';
+const CACHE_NAME = 'mqb-puntos-v2';
 
 // Usamos la URL base del propio SW para construir rutas correctas
 // sin importar en qué carpeta/subdominio esté el sitio
