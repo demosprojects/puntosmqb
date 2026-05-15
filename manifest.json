@@ -10,16 +10,16 @@
   "lang": "es-AR",
   "icons": [
     {
-      "src": "https://imagedelivery.net/ut8GNCA1obOu4JnXrJ_J9Q/e7b59903-06e0-48f8-1bb1-71bd6da8a800/public",
+      "src": "https://res.cloudinary.com/dl2tftoum/image/upload/v1778825050/dlrdqozwpysli8qlfqya.webp",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "maskable"
     },
     {
-      "src": "https://imagedelivery.net/ut8GNCA1obOu4JnXrJ_J9Q/e7b59903-06e0-48f8-1bb1-71bd6da8a800/public",
+      "src": "https://res.cloudinary.com/dl2tftoum/image/upload/v1778825061/of3achjopvj0uu5ko0yz.webp",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "maskable"
     }
   ],
   "screenshots": [
