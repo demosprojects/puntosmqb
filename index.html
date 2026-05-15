@@ -20,7 +20,6 @@
         :root {
             --blue: #2563eb;
             --blue-glow: rgba(37,99,235,0.35);
-            --amber: #f59e0b;
             --emerald: #10b981;
         }
 
@@ -98,23 +97,6 @@
             transition: width 1.2s cubic-bezier(.22,1,.36,1);
         }
 
-        /* BADGE NIVEL — sin bronce */
-        .badge-nivel {
-            display: inline-flex; align-items: center; gap: 5px;
-            padding: 3px 10px; border-radius: 999px;
-            font-size: 9px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase;
-            border: 1px solid;
-        }
-        .badge-plata    { color: #cbd5e1; border-color: #cbd5e155; background: rgba(203,213,225,0.08); }
-        .badge-oro      { color: var(--amber); border-color: #f59e0b55; background: rgba(245,158,11,0.08); }
-        .badge-diamante { color: #60a5fa; border-color: #60a5fa55; background: rgba(96,165,250,0.08); }
-
-        @keyframes pulse-ring {
-            0%   { box-shadow: 0 0 0 0 var(--blue-glow); }
-            70%  { box-shadow: 0 0 0 7px transparent; }
-            100% { box-shadow: 0 0 0 0 transparent; }
-        }
-        .badge-pulse { animation: pulse-ring 2.5s infinite; }
 
         /* HISTORIAL */
         .historial-item { overflow: hidden; }
@@ -332,7 +314,6 @@
     <nav class="px-4 sm:px-6 lg:px-12 py-3 flex justify-between items-center border-b border-white/5 bg-slate-950/80 sticky top-0 z-50 backdrop-blur-md">
         <img src="https://imagedelivery.net/ut8GNCA1obOu4JnXrJ_J9Q/e7b59903-06e0-48f8-1bb1-71bd6da8a800/public" class="h-7 sm:h-8 w-auto" alt="Logo">
         <div class="flex items-center gap-2 sm:gap-3">
-            <div id="navBadgeNivel" class="badge-nivel hidden"></div>
             <button onclick="logout()" class="text-slate-500 hover:text-white text-[9px] sm:text-[10px] font-bold bg-white/[0.03] hover:bg-white/[0.06] px-3 py-2 rounded-xl uppercase tracking-wider border border-white/5 transition-all">Salir</button>
         </div>
     </nav>
@@ -478,7 +459,6 @@
                         </div>
                         <div class="text-right flex-shrink-0">
                             <span id="porcentajeTexto" class="text-2xl sm:text-3xl font-black text-blue-500">0%</span>
-                            <div id="nivelBadge" class="badge-nivel mt-1.5 hidden ml-auto"></div>
                         </div>
                     </div>
                     <div class="w-full bg-slate-900 rounded-full h-3 sm:h-3.5 p-0.5 border border-white/5">
@@ -556,30 +536,6 @@
         if (h >= 12 && h < 15) return { texto: 'Buen mediodía', motiv: '¿Hora de una burger?' };
         if (h >= 15 && h < 20) return { texto: 'Buenas tardes', motiv: 'Seguís sumando puntos' };
         return                         { texto: 'Buenas noches', motiv: 'Descansá y volvé por más' };
-    }
-
-    /* NIVEL — sin bronce */
-    function obtenerNivel(puntos) {
-        if (puntos < 500)  return null;
-        if (puntos < 1500) return { nombre: 'Plata',    clase: 'badge-plata',
-            svg: '<path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>' };
-        if (puntos < 3000) return { nombre: 'Oro',      clase: 'badge-oro',
-            svg: '<path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>' };
-        return                     { nombre: 'Diamante', clase: 'badge-diamante',
-            svg: '<path d="M6 3h12l4 6-10 13L2 9l4-6z"/>' };
-    }
-
-    function renderBadgeNivel(puntos) {
-        const nivel = obtenerNivel(puntos);
-        ['nivelBadge','navBadgeNivel'].forEach(id => {
-            const el = document.getElementById(id);
-            if (!el) return;
-            if (!nivel) { el.classList.add('hidden'); return; }
-            el.className = `badge-nivel ${nivel.clase}`;
-            el.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="9" height="9" viewBox="0 0 24 24" fill="currentColor">${nivel.svg}</svg> ${nivel.nombre}`;
-            el.classList.remove('hidden');
-            if (id === 'navBadgeNivel') el.classList.add('badge-pulse');
-        });
     }
 
     /* HISTORIAL */
@@ -683,8 +639,6 @@
         document.getElementById('motivationalText').textContent =
             usuarioActual.puntos < 100  ? 'Ya casi llegás a tu primer canje' :
             usuarioActual.puntos >= 3000 ? 'Sos de los mejores clientes'     : sal.motiv;
-
-        renderBadgeNivel(usuarioActual.puntos);
 
         const logs = usuarioActual.historial || [];
         const mCont = document.getElementById('movimientosContainer');
