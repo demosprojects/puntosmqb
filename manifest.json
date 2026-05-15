@@ -1,6 +1,6 @@
 {
   "name": "Más que Burgers — Puntos",
-  "short_name": "MQB Puntos",
+  "short_name": "Mas que Burgers",
   "description": "Consultá tus puntos y canjeá premios en Más que Burgers.",
   "start_url": "./index.html",
   "display": "standalone",
