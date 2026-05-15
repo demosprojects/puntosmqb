@@ -2,7 +2,7 @@
   "name": "Más que Burgers — Puntos",
   "short_name": "MQB Puntos",
   "description": "Consultá tus puntos y canjeá premios en Más que Burgers.",
- "start_url": "./index.html",
+  "start_url": "/index.html",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#050508",
@@ -31,14 +31,14 @@
       "label": "Pantalla de acceso con PIN"
     },
     {
-      "src": "https://res.cloudinary.com/dl2tftoum/image/upload/v1778816517/bc6pnujfnkygr1y2th0t.webp",
+      "src": "https://res.cloudinary.com/dl2tftoum/image/upload/v1778824541/qjk9ki5hlfwmcsjhr45n.webp",
       "sizes": "390x844",
       "type": "image/webp",
       "form_factor": "narrow",
       "label": "Dashboard con tus puntos y premios"
     },
     {
-      "src": "https://res.cloudinary.com/dl2tftoum/image/upload/v1778816553/v8rlsclx68e7jfpvjejj.webp",
+      "src": "https://res.cloudinary.com/dl2tftoum/image/upload/v1778824586/wpqfjcgqjtyixtexgs3u.webp",
       "sizes": "390x844",
       "type": "image/webp",
       "form_factor": "narrow",
