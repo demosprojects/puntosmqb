@@ -498,25 +498,7 @@
 <script src="app.js"></script>
 <script>
 
-    /* 3D CARD */
-    const card  = document.getElementById('card');
-    const scene = document.getElementById('scene');
-    scene.addEventListener('mousemove', e => {
-        const r = scene.getBoundingClientRect();
-        const x = e.clientX - r.left, y = e.clientY - r.top;
-        const cx = r.width / 2, cy = r.height / 2;
-        card.style.transform = `rotateX(${(y-cy)/10}deg) rotateY(${(cx-x)/10}deg)`;
-        card.style.setProperty('--x', `${x}px`);
-        card.style.setProperty('--y', `${y}px`);
-    });
-    scene.addEventListener('mouseleave', () => { card.style.transform = 'rotateX(0deg) rotateY(0deg)'; });
-    scene.addEventListener('touchmove', e => {
-        const t = e.touches[0], r = scene.getBoundingClientRect();
-        const x = t.clientX - r.left, y = t.clientY - r.top;
-        const cx = r.width / 2, cy = r.height / 2;
-        card.style.transform = `rotateX(${(y-cy)/14}deg) rotateY(${(cx-x)/14}deg)`;
-    }, { passive: true });
-    scene.addEventListener('touchend', () => { card.style.transform = 'rotateX(0deg) rotateY(0deg)'; });
+    /* 3D CARD — efecto desactivado */
 
     /* VER / OCULTAR PIN */
     let pinVisible = false;
@@ -529,13 +511,28 @@
         document.getElementById('pinBtn').classList.toggle('active', pinVisible);
     }
 
-    /* SALUDO */
+    /* SALUDO — horario de atención 19:00 a 01:00 */
     function obtenerSaludo() {
         const h = new Date().getHours();
-        if (h >= 6  && h < 12) return { texto: 'Buenos días',   motiv: 'Empezá el día con todo' };
-        if (h >= 12 && h < 15) return { texto: 'Buen mediodía', motiv: '¿Hora de una burger?' };
-        if (h >= 15 && h < 20) return { texto: 'Buenas tardes', motiv: 'Seguís sumando puntos' };
-        return                         { texto: 'Buenas noches', motiv: 'Descansá y volvé por más' };
+
+        // Abierto: 19:00 a 00:59
+        if (h === 0) {
+            return { texto: '¡Aún abrimos!', motiv: 'Todavía estás a tiempo de pasar' };
+        }
+        if (h >= 19) {
+            const abiertos = [
+                { texto: '¡Abrimos!',         motiv: 'Esta noche venís a comer 🍔' },
+                { texto: 'Esta noche,',        motiv: '¿Te mandamos una burger?' },
+                { texto: 'Buenas noches',      motiv: 'La noche pide una burger' },
+                { texto: '¡Estamos abiertos!', motiv: 'Pasá a sumar puntos esta noche' },
+            ];
+            return abiertos[Math.floor(Math.random() * abiertos.length)];
+        }
+
+        // Cerrado: 01:00 a 18:59
+        if (h >= 6  && h < 12) return { texto: 'Buenos días',   motiv: 'Esta noche abrimos desde las 19 h' };
+        if (h >= 12 && h < 15) return { texto: 'Buen mediodía', motiv: 'Guardá el hambre para la noche 🍔' };
+        return                         { texto: 'Buenas tardes', motiv: 'Ya casi es hora — abrimos a las 19' };
     }
 
     /* HISTORIAL */
