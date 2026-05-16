@@ -113,9 +113,13 @@ async function iniciarConPin(pin) {
 }
 
 function logout() {
+    // Mostramos el loader con mensaje de cierre de sesión
+    const loaderText = document.getElementById('loaderText');
+    if (loaderText) loaderText.textContent = 'Cerrando sesión';
+    showLoader();
     // Borramos el PIN de la memoria al salir
     localStorage.removeItem('puntos_user_pin');
-    location.reload();
+    setTimeout(() => location.reload(), 800);
 }
 
 function renderAll() {
