@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Puntos</title>
+    <title>Gestionar puntos | Más que Burgers</title>
      <link rel="icon" href="https://imagedelivery.net/ut8GNCA1obOu4JnXrJ_J9Q/e7b59903-06e0-48f8-1bb1-71bd6da8a800/public" type="image/x-icon">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
@@ -253,58 +253,42 @@
                 <div id="clienteAcciones" class="hidden space-y-8 animate-in fade-in duration-700">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-                        <div class="glass p-8 rounded-[2.5rem] border border-emerald-500/10 space-y-4">
-                            <h3 class="text-lg font-bold uppercase italic flex items-center gap-2">
-                                <span class="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-500 flex items-center justify-center text-sm font-black">+</span>
-                                Cargar Compra
-                            </h3>
-                            <p class="text-[10px] text-slate-500 font-semibold uppercase -mt-2">Seleccioná el producto consumido</p>
-                            <select id="selectProductoAgregar" onchange="onSelectProductoAgregar()"
-                                class="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 outline-none focus:border-emerald-500/50 transition-all text-sm text-white appearance-none cursor-pointer">
-                                <option value="">Seleccioná un producto…</option>
-                            </select>
-                            <div id="previewPuntosAgregar" class="hidden flex items-center justify-between bg-emerald-500/5 border border-emerald-500/20 rounded-xl px-4 py-3">
-                                <span class="text-[10px] text-slate-400 uppercase font-bold">Puntos a acreditar</span>
-                                <span id="previewPuntosAgregarVal" class="font-black text-lg text-emerald-400"></span>
-                            </div>
-                            <button id="btnAgregar" onclick="agregarPuntos()" class="w-full bg-emerald-600 hover:bg-emerald-500 p-3 rounded-xl font-bold uppercase text-[10px] tracking-widest transition-all flex items-center justify-center gap-2">
-                                <span id="btnAgregarText">Acreditar</span>
-                                <div id="btnAgregarSpinner" class="btn-spinner hidden"></div>
+                        <!-- Botón Cargar -->
+                        <div id="contenedorCargarNormal">
+                            <button onclick="abrirModalProductos('carga')"
+                                class="w-full glass border border-emerald-500/20 hover:border-emerald-500/50 hover:bg-emerald-500/5 rounded-[2.5rem] p-8 flex flex-col items-center justify-center gap-4 transition-all group active:scale-[0.98]">
+                                <div class="w-16 h-16 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center group-hover:bg-emerald-500/25 transition-all">
+                                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="#34d399" stroke-width="2.5" stroke-linecap="round"/></svg>
+                                </div>
+                                <div class="text-center">
+                                    <p class="text-lg font-black uppercase italic text-white tracking-tight">Cargar Compra</p>
+                                    <p class="text-[10px] text-slate-500 font-semibold uppercase tracking-widest mt-1">Tocá para seleccionar producto</p>
+                                </div>
                             </button>
                         </div>
 
-                        <div class="glass p-8 rounded-[2.5rem] border border-rose-500/10 space-y-4 relative overflow-hidden">
-                            <h3 class="text-lg font-bold uppercase italic flex items-center gap-2">
-                                <span class="w-8 h-8 rounded-lg bg-rose-500/20 text-rose-500 flex items-center justify-center text-sm font-black">−</span>
-                                Registrar Canje
-                            </h3>
-                            
-                            <div id="contenedorCanjeNormal" class="space-y-4">
-                                <p class="text-[10px] text-slate-500 font-semibold uppercase -mt-2">Seleccioná el premio que se canjea</p>
-                                <select id="selectProductoRestar" onchange="onSelectProductoRestar()"
-                                    class="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 outline-none focus:border-rose-500/50 transition-all text-sm text-white appearance-none cursor-pointer">
-                                    <option value="">Seleccioná un premio…</option>
-                                </select>
-                                <div id="previewPuntosRestar" class="hidden bg-rose-500/5 border border-rose-500/20 rounded-xl px-4 py-3 space-y-1">
-                                    <div class="flex items-center justify-between">
-                                        <span class="text-[10px] text-slate-400 uppercase font-bold">Puntos a descontar</span>
-                                        <span id="previewPuntosRestarVal" class="font-black text-lg text-rose-400"></span>
-                                    </div>
-                                    <p id="previewPuntosRestarAviso" class="text-[10px] text-amber-400 font-bold"></p>
-                                </div>
-                                <button id="btnRestar" onclick="restarPuntos()" class="w-full bg-rose-600 hover:bg-rose-500 p-3 rounded-xl font-bold uppercase text-[10px] tracking-widest transition-all flex items-center justify-center gap-2">
-                                    <span id="btnRestarText">Debitar</span>
-                                    <div id="btnRestarSpinner" class="btn-spinner hidden"></div>
-                                </button>
+                        <!-- Bloqueo carga diaria -->
+                        <div id="mensajeBloqueoCargar" class="hidden glass border border-amber-500/20 rounded-[2.5rem] p-8 flex flex-col items-center justify-center gap-4 text-center">
+                            <div class="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
+                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#fbbf24" stroke-width="1.5" fill="none"/><path d="M12 7v5l3 3" stroke="#fbbf24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
                             </div>
-
-                            <div id="mensajeBloqueoCanje" class="hidden bg-slate-900/80 border border-amber-500/20 rounded-2xl p-5 text-center space-y-2 mt-2">
-                                <div class="w-10 h-10 rounded-full bg-amber-500/10 flex items-center justify-center mx-auto mb-2"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="9" stroke="#fbbf24" stroke-width="1.5" fill="none"/><path d="M12 7v5l3 3" stroke="#fbbf24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-                                <p class="text-xs font-bold text-amber-400 uppercase tracking-widest">Límite Diario Alcanzado</p>
-                                <p class="text-[10px] text-slate-400 font-medium leading-relaxed">El cliente ya realizó un canje el día de hoy. Solo se permite 1 canje por día.</p>
+                            <div>
+                                <p class="text-sm font-black uppercase italic text-amber-400 tracking-tight">Límite Diario</p>
+                                <p class="text-[10px] text-slate-400 font-medium leading-relaxed mt-1">El cliente ya cargó una compra hoy.<br>Solo se permite 1 carga por día.</p>
                             </div>
-
                         </div>
+
+                        <!-- Botón Canje -->
+                        <button onclick="abrirModalProductos('canje')"
+                            class="w-full glass border border-rose-500/20 hover:border-rose-500/50 hover:bg-rose-500/5 rounded-[2.5rem] p-8 flex flex-col items-center justify-center gap-4 transition-all group active:scale-[0.98]">
+                            <div class="w-16 h-16 rounded-2xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center group-hover:bg-rose-500/25 transition-all">
+                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none"><path d="M7 16l-4-4 4-4M17 8l4 4-4 4M14 4l-4 16" stroke="#fb7185" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            </div>
+                            <div class="text-center">
+                                <p class="text-lg font-black uppercase italic text-white tracking-tight">Registrar Canje</p>
+                                <p class="text-[10px] text-slate-500 font-semibold uppercase tracking-widest mt-1">Tocá para seleccionar premio</p>
+                            </div>
+                        </button>
 
                     </div>
                     <section>
@@ -401,8 +385,8 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 
                 <div class="space-y-4">
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="space-y-1 col-span-2">
+                    <div class="space-y-4">
+                        <div class="space-y-1">
                             <label class="text-[10px] uppercase font-bold text-slate-500 ml-1">Nombre del producto *</label>
                             <input id="formProdNombre" placeholder="Ej: American doble"
                                 class="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 outline-none focus:border-blue-500 text-white text-sm transition-all">
@@ -412,18 +396,45 @@
                             <input id="formProdCategoria" placeholder="Ej: Burgers, Papas, Kids"
                                 class="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 outline-none focus:border-blue-500 text-white text-sm transition-all">
                         </div>
-                        <div class="space-y-1">
-                            <label class="text-[10px] uppercase font-bold text-slate-500 ml-1">Puntos *</label>
-                            <input id="formProdPuntos" type="number" placeholder="Ej: 250"
-                                class="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 outline-none focus:border-blue-500 text-white text-sm font-bold transition-all">
+
+                        <!-- ¿Dónde aparece? -->
+                        <div class="space-y-2">
+                            <label class="text-[10px] uppercase font-bold text-slate-500 ml-1">¿Dónde aparece? *</label>
+                            <div class="grid grid-cols-2 gap-2" id="apareceBtns">
+                                <button type="button" onclick="setAparece('carga')" id="btn-aparece-carga"
+                                    class="aparece-btn flex flex-col items-center gap-1.5 p-3 rounded-xl border border-slate-700 bg-slate-900 text-slate-400 hover:border-emerald-500/50 hover:text-emerald-400 transition-all text-[10px] font-bold uppercase tracking-wide">
+                                    <span class="text-xl">＋</span>
+                                    <span>Solo en Carga</span>
+                                </button>
+                                <button type="button" onclick="setAparece('canje')" id="btn-aparece-canje"
+                                    class="aparece-btn flex flex-col items-center gap-1.5 p-3 rounded-xl border border-slate-700 bg-slate-900 text-slate-400 hover:border-rose-500/50 hover:text-rose-400 transition-all text-[10px] font-bold uppercase tracking-wide">
+                                    <span class="text-xl">⇄</span>
+                                    <span>Solo en Canje</span>
+                                </button>
+                                <button type="button" onclick="setAparece('ambos')" id="btn-aparece-ambos"
+                                    class="aparece-btn flex flex-col items-center gap-1.5 p-3 rounded-xl border border-slate-700 bg-slate-900 text-slate-400 hover:border-blue-500/50 hover:text-blue-400 transition-all text-[10px] font-bold uppercase tracking-wide">
+                                    <span class="text-xl">✦</span>
+                                    <span>Aparece en Ambos</span>
+                                </button>
+                                <button type="button" onclick="setAparece('otro')" id="btn-aparece-otro"
+                                    class="aparece-btn flex flex-col items-center gap-1.5 p-3 rounded-xl border border-slate-700 bg-slate-900 text-slate-400 hover:border-slate-400/50 hover:text-slate-300 transition-all text-[10px] font-bold uppercase tracking-wide">
+                                    <span class="text-xl">○</span>
+                                    <span>Otro / Oculto</span>
+                                </button>
+                            </div>
+                            <input type="hidden" id="formProdAparece" value="">
                         </div>
-                        <div class="space-y-1 col-span-2">
-                            <label class="text-[10px] uppercase font-bold text-slate-500 ml-1">Tipo</label>
-                            <select id="formProdCanjeable"
-                                class="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 outline-none focus:border-blue-500 text-white text-sm transition-all appearance-none cursor-pointer">
-                                <option value="true">Suma y es canjeable (aparece en ambos paneles)</option>
-                                <option value="false">Solo suma puntos (no aparece en Canje)</option>
-                            </select>
+
+                        <!-- Puntos: se muestran según contexto -->
+                        <div id="bloquePuntosCargar" class="hidden space-y-1">
+                            <label class="text-[10px] uppercase font-bold text-emerald-500/70 ml-1">Puntos que suma al cargar *</label>
+                            <input id="formProdPuntosCargar" type="number" placeholder="Ej: 100"
+                                class="w-full p-3 rounded-xl bg-slate-900 border border-emerald-800/40 outline-none focus:border-emerald-500 text-white text-sm font-bold transition-all">
+                        </div>
+                        <div id="bloquePuntosCanje" class="hidden space-y-1">
+                            <label class="text-[10px] uppercase font-bold text-rose-500/70 ml-1">Puntos que cuesta el canje *</label>
+                            <input id="formProdPuntosCanje" type="number" placeholder="Ej: 1000"
+                                class="w-full p-3 rounded-xl bg-slate-900 border border-rose-800/40 outline-none focus:border-rose-500 text-white text-sm font-bold transition-all">
                         </div>
                     </div>
                     <button id="btnGuardarProd" onclick="guardarProducto()"
@@ -456,6 +467,94 @@
     </div>
 
     </main>
+
+    <!-- ══ MODAL SELECTOR DE PRODUCTOS ══════════════════════════════ -->
+    <div id="modalProductos" class="hidden fixed inset-0 z-[99990] flex items-end sm:items-center justify-center p-0 sm:p-6"
+         style="background:rgba(0,0,0,0.85);backdrop-filter:blur(10px);">
+
+        <div class="w-full sm:max-w-lg rounded-t-[2.5rem] sm:rounded-[2.5rem] flex flex-col"
+             style="background:#09090f;border:1px solid rgba(255,255,255,0.07);max-height:92vh;">
+
+            <!-- Header modal -->
+            <div id="modalProdHeader" class="flex items-center justify-between px-7 pt-7 pb-4 flex-shrink-0">
+                <div class="flex items-center gap-3">
+                    <div id="modalProdIcono" class="w-10 h-10 rounded-xl flex items-center justify-center"></div>
+                    <div>
+                        <p id="modalProdTitulo" class="text-base font-black uppercase italic tracking-tight text-white"></p>
+                        <p id="modalProdSubtitulo" class="text-[10px] text-slate-500 font-semibold uppercase tracking-widest"></p>
+                    </div>
+                </div>
+                <button onclick="cerrarModalProductos()"
+                    class="w-9 h-9 rounded-xl bg-white/5 hover:bg-white/10 border border-white/8 flex items-center justify-center text-slate-400 hover:text-white transition-all">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                </button>
+            </div>
+
+            <!-- Buscador -->
+            <div class="px-7 pb-4 flex-shrink-0">
+                <div class="relative">
+                    <svg class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" width="16" height="16" viewBox="0 0 24 24" fill="none">
+                        <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/>
+                        <path d="M20 20l-3-3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    <input id="modalProdBuscador" type="text" placeholder="Buscá el producto…"
+                        oninput="filtrarModalProductos()"
+                        class="w-full pl-11 pr-4 py-3 rounded-2xl text-sm font-semibold text-white placeholder:text-slate-600 outline-none transition-all"
+                        style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);">
+                </div>
+            </div>
+
+            <!-- Grid de productos -->
+            <div id="modalProdGrid" class="overflow-y-auto px-7 pb-7 flex-1" style="scrollbar-width:thin;scrollbar-color:#1e293b transparent;">
+                <!-- se llena con JS -->
+            </div>
+
+            <!-- Footer vacío (por si no hay resultados) -->
+            <div id="modalProdVacio" class="hidden px-7 pb-10 text-center text-slate-600 text-sm italic font-semibold">
+                No se encontraron productos.
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ MODAL CONFIRMACIÓN DE OPERACIÓN ═══════════════════════════ -->
+    <div id="modalConfirmOp" class="hidden fixed inset-0 z-[99991] flex items-end sm:items-center justify-center p-0 sm:p-6"
+         style="background:rgba(0,0,0,0.9);backdrop-filter:blur(12px);">
+
+        <div class="w-full sm:max-w-sm rounded-t-[2.5rem] sm:rounded-[2.5rem] p-8 space-y-6 flex-shrink-0"
+             style="background:#09090f;border:1px solid rgba(255,255,255,0.07);">
+
+            <!-- Imagen producto seleccionado -->
+            <div id="confirmOpImgWrap" class="hidden w-full h-40 rounded-2xl overflow-hidden bg-slate-900 border border-white/5">
+                <img id="confirmOpImg" src="" alt="" class="w-full h-full object-cover">
+            </div>
+
+            <div class="text-center space-y-1">
+                <p id="confirmOpEtiqueta" class="text-[10px] uppercase font-black tracking-widest"></p>
+                <p id="confirmOpNombre" class="text-2xl font-black italic uppercase tracking-tight text-white leading-tight"></p>
+                <p id="confirmOpCategoria" class="text-[10px] text-slate-500 uppercase font-bold tracking-widest"></p>
+            </div>
+
+            <!-- Puntos destacados -->
+            <div id="confirmOpPuntosBox" class="rounded-2xl px-6 py-5 text-center">
+                <p id="confirmOpPuntosLabel" class="text-[10px] uppercase font-black tracking-widest mb-1"></p>
+                <p id="confirmOpPuntosVal" class="text-5xl font-black tracking-tight"></p>
+                <p id="confirmOpAviso" class="text-[10px] font-bold mt-2 hidden"></p>
+            </div>
+
+            <!-- Botones -->
+            <div class="flex gap-3">
+                <button onclick="volverAModalProductos()"
+                    class="flex-1 py-3.5 rounded-2xl font-bold text-[10px] uppercase tracking-widest text-slate-400 transition-all border border-white/8 hover:bg-white/5">
+                    ← Volver
+                </button>
+                <button id="confirmOpBtn" onclick="confirmarOperacion()"
+                    class="flex-2 flex-grow py-3.5 rounded-2xl font-bold text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-2">
+                    <span id="confirmOpBtnText"></span>
+                    <div id="confirmOpSpinner" class="btn-spinner hidden"></div>
+                </button>
+            </div>
+        </div>
+    </div>
 
     <div id="modalEditarTarjeta" class="hidden fixed inset-0 z-[99997] flex items-center justify-center p-6" style="background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);">
         <div class="glass rounded-[2rem] p-8 w-full max-w-md space-y-6 border border-white/10" style="background:rgba(5,5,8,0.97);">
@@ -649,6 +748,18 @@
                 toast.addEventListener('animationend', () => toast.remove());
             }, duration);
         }
+    </script>
+    <script>
+        // Cerrar modal con Escape o click en el fondo
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape') cerrarModalProductos?.();
+        });
+        document.getElementById('modalProductos')?.addEventListener('click', e => {
+            if (e.target === document.getElementById('modalProductos')) cerrarModalProductos();
+        });
+        document.getElementById('modalConfirmOp')?.addEventListener('click', e => {
+            if (e.target === document.getElementById('modalConfirmOp')) cerrarModalProductos();
+        });
     </script>
 </body>
 </html>
