@@ -354,82 +354,236 @@ function populateSelects() {
 
     const categorias = [...new Set(productos.map(p => p.categoria || 'General'))];
 
-    const buildGrouped = (lista) => {
+    const buildGrouped = (lista, camtoPuntos) => {
         if (!lista.length) return '<option value="" disabled>Sin productos cargados</option>';
         let html = '<option value="">Seleccioná un producto…</option>';
         categorias.forEach(cat => {
             const grupo = lista.filter(p => (p.categoria || 'General') === cat);
             if (grupo.length) {
                 html += `<optgroup label="— ${cat} —">${
-                    grupo.map(p => `<option value="${p.id}">${p.nombre} — ${p.puntos} pts</option>`).join('')
+                    grupo.map(p => {
+                        const pts = p[camtoPuntos] ?? p.puntos ?? 0;
+                        return `<option value="${p.id}">${p.nombre} — ${pts} pts</option>`;
+                    }).join('')
                 }</optgroup>`;
             }
         });
         return html;
     };
 
-    acreditar.innerHTML = buildGrouped(productos);
-    debitar.innerHTML   = buildGrouped(productos.filter(p => p.canjeable !== false));
+    // En cargar: productos con aparece 'carga' o 'ambos' (o sin campo aparece y canjeable cualquier cosa)
+    const prodCargar = productos.filter(p => {
+        const ap = p.aparece || (p.canjeable === false ? 'carga' : 'ambos');
+        return ap === 'carga' || ap === 'ambos';
+    });
+    // En canje: productos con aparece 'canje' o 'ambos'
+    const prodCanje = productos.filter(p => {
+        const ap = p.aparece || (p.canjeable === false ? 'carga' : 'ambos');
+        return ap === 'canje' || ap === 'ambos';
+    });
+
+    acreditar.innerHTML = buildGrouped(prodCargar, 'puntosCargar');
+    debitar.innerHTML   = buildGrouped(prodCanje,  'puntosCanje');
     document.getElementById("previewPuntosAgregar")?.classList.add("hidden");
     document.getElementById("previewPuntosRestar")?.classList.add("hidden");
 }
 
-function onSelectProductoAgregar() {
-    const select  = document.getElementById("selectProductoAgregar");
-    const preview = document.getElementById("previewPuntosAgregar");
-    const prod    = productos.find(p => p.id === select.value);
-    if (prod) {
-        document.getElementById("previewPuntosAgregarVal").textContent = `+${prod.puntos} pts`;
-        preview.classList.remove("hidden");
-    } else {
-        preview.classList.add("hidden");
+// ── MODAL SELECTOR DE PRODUCTOS ───────────────────────────────────
+let modalModoActual = null;   // 'carga' | 'canje'
+let productoSeleccionado = null;
+
+function abrirModalProductos(modo) {
+    modalModoActual = modo;
+    productoSeleccionado = null;
+    document.getElementById('modalProdBuscador').value = '';
+
+    const esCarga = modo === 'carga';
+    const icono   = esCarga
+        ? `<div class="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="#34d399" stroke-width="2.5" stroke-linecap="round"/></svg></div>`
+        : `<div class="w-10 h-10 rounded-xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M7 16l-4-4 4-4M17 8l4 4-4 4M14 4l-4 16" stroke="#fb7185" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>`;
+
+    document.getElementById('modalProdIcono').innerHTML    = icono;
+    document.getElementById('modalProdTitulo').textContent = esCarga ? 'Cargar Compra' : 'Registrar Canje';
+    document.getElementById('modalProdSubtitulo').textContent = esCarga ? 'Seleccioná el producto consumido' : 'Seleccioná el premio a canjear';
+
+    renderModalGrid('');
+    document.getElementById('modalProductos').classList.remove('hidden');
+    setTimeout(() => document.getElementById('modalProdBuscador').focus(), 150);
+}
+
+function cerrarModalProductos() {
+    document.getElementById('modalProductos').classList.add('hidden');
+    document.getElementById('modalConfirmOp').classList.add('hidden');
+    modalModoActual = null;
+    productoSeleccionado = null;
+}
+
+function filtrarModalProductos() {
+    const q = document.getElementById('modalProdBuscador').value;
+    renderModalGrid(q);
+}
+
+function renderModalGrid(query) {
+    const grid  = document.getElementById('modalProdGrid');
+    const vacio = document.getElementById('modalProdVacio');
+    const q     = query.toLowerCase().trim();
+    const esCarga = modalModoActual === 'carga';
+
+    const lista = productos.filter(p => {
+        const ap = p.aparece || (p.canjeable === false ? 'carga' : 'ambos');
+        const ok = esCarga ? (ap === 'carga' || ap === 'ambos') : (ap === 'canje' || ap === 'ambos');
+        if (!ok) return false;
+        if (q) return p.nombre.toLowerCase().includes(q) || (p.categoria || '').toLowerCase().includes(q);
+        return true;
+    });
+
+    if (!lista.length) {
+        grid.innerHTML = '';
+        vacio.classList.remove('hidden');
+        return;
     }
+    vacio.classList.add('hidden');
+
+    // Agrupar por categoría
+    const cats = [...new Set(lista.map(p => p.categoria || 'General'))];
+    let html = '';
+    cats.forEach(cat => {
+        const grupo = lista.filter(p => (p.categoria || 'General') === cat);
+        html += `<p class="text-[9px] uppercase font-black tracking-widest mb-2 mt-4 first:mt-0" style="color:#475569">${cat}</p>`;
+        html += `<div class="grid grid-cols-2 gap-3">`;
+        grupo.forEach(p => {
+            const pts     = esCarga ? (p.puntosCargar ?? p.puntos ?? 0) : (p.puntosCanje ?? p.puntos ?? 0);
+            const color   = esCarga ? '#34d399' : '#fb7185';
+            const prefix  = esCarga ? '+' : '-';
+            const tieneImg = p.imagen && p.imagen.trim() !== '';
+            html += `
+                <button onclick="seleccionarProductoModal('${p.id}')"
+                    class="rounded-2xl overflow-hidden border border-white/6 hover:border-white/20 transition-all active:scale-95 text-left flex flex-col"
+                    style="background:rgba(255,255,255,0.03);">
+                    <div class="w-full h-24 bg-slate-900 flex items-center justify-center overflow-hidden flex-shrink-0">
+                        ${tieneImg
+                            ? `<img src="${p.imagen}" alt="${p.nombre}" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML='<span style=\\'font-size:2rem\\'>🍔</span>'">`
+                            : `<span style="font-size:2rem">🍔</span>`}
+                    </div>
+                    <div class="p-3 flex flex-col gap-1 flex-1">
+                        <p class="text-[11px] font-bold text-white leading-tight">${p.nombre}</p>
+                        <p class="text-[10px] font-black mt-auto" style="color:${color}">${prefix}${pts} pts</p>
+                    </div>
+                </button>`;
+        });
+        html += `</div>`;
+    });
+    grid.innerHTML = html;
 }
 
-function onSelectProductoRestar() {
-    const select  = document.getElementById("selectProductoRestar");
-    const preview = document.getElementById("previewPuntosRestar");
-    const prod    = productos.find(p => p.id === select.value);
-    if (prod) {
-        const puede = clienteActual && prod.puntos <= clienteActual.puntos;
-        document.getElementById("previewPuntosRestarVal").textContent = `-${prod.puntos} pts`;
-        document.getElementById("previewPuntosRestarVal").className = `font-black text-lg ${puede ? 'text-rose-400' : 'text-amber-400'}`;
-        document.getElementById("previewPuntosRestarAviso").textContent = puede ? '' : '⚠ Puntos insuficientes';
-        preview.classList.remove("hidden");
+function seleccionarProductoModal(id) {
+    const prod = productos.find(p => p.id === id);
+    if (!prod) return;
+    productoSeleccionado = prod;
+
+    const esCarga = modalModoActual === 'carga';
+    const pts     = esCarga ? (prod.puntosCargar ?? prod.puntos ?? 0) : (prod.puntosCanje ?? prod.puntos ?? 0);
+    const puede   = !esCarga ? (clienteActual && pts <= clienteActual.puntos) : true;
+
+    // Imagen
+    const imgWrap = document.getElementById('confirmOpImgWrap');
+    const img     = document.getElementById('confirmOpImg');
+    if (prod.imagen && prod.imagen.trim()) {
+        img.src = prod.imagen;
+        imgWrap.classList.remove('hidden');
     } else {
-        preview.classList.add("hidden");
+        imgWrap.classList.add('hidden');
     }
+
+    // Textos
+    document.getElementById('confirmOpEtiqueta').textContent  = esCarga ? '✦ Cargando producto' : '⇄ Canjeando premio';
+    document.getElementById('confirmOpEtiqueta').style.color  = esCarga ? '#34d399' : '#fb7185';
+    document.getElementById('confirmOpNombre').textContent    = prod.nombre;
+    document.getElementById('confirmOpCategoria').textContent = prod.categoria || 'General';
+
+    // Puntos
+    const box = document.getElementById('confirmOpPuntosBox');
+    box.style.background = esCarga ? 'rgba(52,211,153,0.06)' : 'rgba(251,113,133,0.06)';
+    box.style.border     = esCarga ? '1px solid rgba(52,211,153,0.2)' : '1px solid rgba(251,113,133,0.2)';
+    document.getElementById('confirmOpPuntosLabel').textContent = esCarga ? 'Puntos a acreditar' : 'Puntos a descontar';
+    document.getElementById('confirmOpPuntosLabel').style.color = esCarga ? '#34d399' : '#fb7185';
+    document.getElementById('confirmOpPuntosVal').textContent   = `${esCarga ? '+' : '-'}${pts}`;
+    document.getElementById('confirmOpPuntosVal').style.color   = esCarga ? '#34d399' : (puede ? '#fb7185' : '#fbbf24');
+
+    const aviso = document.getElementById('confirmOpAviso');
+    if (!esCarga && !puede) {
+        aviso.textContent = '⚠ Puntos insuficientes para este canje';
+        aviso.style.color = '#fbbf24';
+        aviso.classList.remove('hidden');
+    } else {
+        aviso.classList.add('hidden');
+    }
+
+    // Botón confirmar
+    const btn = document.getElementById('confirmOpBtn');
+    document.getElementById('confirmOpBtnText').textContent = esCarga ? 'Acreditar' : 'Canjear';
+    btn.disabled = !puede && !esCarga;
+    if (esCarga) {
+        btn.className = 'flex-2 flex-grow py-3.5 rounded-2xl font-bold text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-900/30';
+    } else if (puede) {
+        btn.className = 'flex-2 flex-grow py-3.5 rounded-2xl font-bold text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 bg-rose-600 hover:bg-rose-500 text-white shadow-lg shadow-rose-900/30';
+    } else {
+        btn.className = 'flex-2 flex-grow py-3.5 rounded-2xl font-bold text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 bg-slate-700 text-slate-400 cursor-not-allowed opacity-60';
+    }
+
+    document.getElementById('modalProductos').classList.add('hidden');
+    document.getElementById('modalConfirmOp').classList.remove('hidden');
 }
 
-async function agregarPuntos() {
-    const select = document.getElementById("selectProductoAgregar");
-    const prod   = productos.find(p => p.id === select.value);
-    if (!prod) { showToast("Seleccioná un producto.", "warn"); return; }
-    setBtnLoading('btnAgregar', 'btnAgregarText', 'btnAgregarSpinner', true, 'Acreditar');
-    clienteActual.puntos += prod.puntos;
-    clienteActual.historial.push({ fecha: new Date().toISOString().split('T')[0], descripcion: prod.nombre, puntos: prod.puntos });
-    await updateUsuario(clienteActual);
-    setBtnLoading('btnAgregar', 'btnAgregarText', 'btnAgregarSpinner', false, 'Acreditar');
-    select.value = "";
-    document.getElementById("previewPuntosAgregar").classList.add("hidden");
-    renderCliente();
+function volverAModalProductos() {
+    document.getElementById('modalConfirmOp').classList.add('hidden');
+    document.getElementById('modalProductos').classList.remove('hidden');
 }
 
-async function restarPuntos() {
-    const select = document.getElementById("selectProductoRestar");
-    const prod   = productos.find(p => p.id === select.value);
-    if (!prod) { showToast("Seleccioná un premio a canjear.", "warn"); return; }
-    if (prod.puntos > clienteActual.puntos) { showToast("Puntos insuficientes.", "error"); return; }
-    setBtnLoading('btnRestar', 'btnRestarText', 'btnRestarSpinner', true, 'Debitar');
-    clienteActual.puntos -= prod.puntos;
-    clienteActual.historial.push({ fecha: new Date().toISOString().split('T')[0], descripcion: `Canje: ${prod.nombre}`, puntos: -prod.puntos });
+async function confirmarOperacion() {
+    if (!productoSeleccionado || !modalModoActual) return;
+    const esCarga = modalModoActual === 'carga';
+    const pts     = esCarga
+        ? (productoSeleccionado.puntosCargar ?? productoSeleccionado.puntos ?? 0)
+        : (productoSeleccionado.puntosCanje  ?? productoSeleccionado.puntos ?? 0);
+
+    if (!esCarga && pts > clienteActual.puntos) { showToast('Puntos insuficientes.', 'error'); return; }
+
+    const btnText    = document.getElementById('confirmOpBtnText');
+    const btnSpinner = document.getElementById('confirmOpSpinner');
+    const btn        = document.getElementById('confirmOpBtn');
+    btn.disabled = true; btnText.textContent = ''; btnSpinner.classList.remove('hidden');
+
+    if (esCarga) {
+        clienteActual.puntos += pts;
+        clienteActual.historial.push({ fecha: new Date().toISOString().split('T')[0], descripcion: productoSeleccionado.nombre, puntos: pts });
+    } else {
+        clienteActual.puntos -= pts;
+        clienteActual.historial.push({ fecha: new Date().toISOString().split('T')[0], descripcion: `Canje: ${productoSeleccionado.nombre}`, puntos: -pts });
+    }
+
     await updateUsuario(clienteActual);
-    setBtnLoading('btnRestar', 'btnRestarText', 'btnRestarSpinner', false, 'Debitar');
-    select.value = "";
-    document.getElementById("previewPuntosRestar").classList.add("hidden");
+
+    btn.disabled = false; btnText.textContent = esCarga ? 'Acreditar' : 'Canjear'; btnSpinner.classList.add('hidden');
+
+    cerrarModalProductos();
     renderCliente();
-    verificarLimiteCanje(); // VERIFICA Y BLOQUEA AL INSTANTE
+    if (esCarga) verificarLimiteCanje();
+
+    showToast(
+        esCarga
+            ? `✓ +${pts} pts — ${productoSeleccionado.nombre}`
+            : `✓ Canje registrado — ${productoSeleccionado.nombre}`,
+        'success'
+    );
 }
+
+// Mantener funciones legacy para compatibilidad interna (populateSelects las usa internamente)
+function onSelectProductoAgregar() {}
+function onSelectProductoRestar() {}
+
+async function agregarPuntos() {}
+async function restarPuntos() {}
 
 // ── Stock de tarjetas ──────────────────────────────────────
 let filtroActual = 'todos';
@@ -740,6 +894,39 @@ async function procesarGeneracion() {
 // ── Panel de Productos ─────────────────────────────────────
 let productoEditandoId = null;
 
+// ── Selector visual de dónde aparece el producto ───────────
+function setAparece(valor) {
+    document.getElementById('formProdAparece').value = valor;
+
+    // Reset todos los botones
+    document.querySelectorAll('.aparece-btn').forEach(b => {
+        b.classList.remove('border-emerald-500', 'text-emerald-400', 'bg-emerald-500/10',
+                           'border-rose-500',    'text-rose-400',    'bg-rose-500/10',
+                           'border-blue-500',    'text-blue-400',    'bg-blue-500/10',
+                           'border-slate-400',   'text-slate-300',   'bg-slate-700/40');
+        b.classList.add('border-slate-700', 'bg-slate-900', 'text-slate-400');
+    });
+
+    // Resaltar el elegido
+    const colores = {
+        carga: ['border-emerald-500', 'text-emerald-400', 'bg-emerald-500/10'],
+        canje: ['border-rose-500',    'text-rose-400',    'bg-rose-500/10'],
+        ambos: ['border-blue-500',    'text-blue-400',    'bg-blue-500/10'],
+        otro:  ['border-slate-400',   'text-slate-300',   'bg-slate-700/40'],
+    };
+    const btn = document.getElementById(`btn-aparece-${valor}`);
+    if (btn) {
+        btn.classList.remove('border-slate-700', 'bg-slate-900', 'text-slate-400');
+        colores[valor].forEach(c => btn.classList.add(c));
+    }
+
+    // Mostrar/ocultar bloques de puntos
+    const bc = document.getElementById('bloquePuntosCargar');
+    const bj = document.getElementById('bloquePuntosCanje');
+    bc.classList.toggle('hidden', valor === 'canje' || valor === 'otro');
+    bj.classList.toggle('hidden', valor === 'carga' || valor === 'otro');
+}
+
 function renderPanelProductos() {
     const lista = document.getElementById("listaProductos");
     if (!lista) return;
@@ -756,6 +943,14 @@ function renderPanelProductos() {
         lista.innerHTML += `<div class="col-span-full text-[10px] font-black uppercase tracking-widest text-slate-500 pt-2 pb-1 border-b border-white/5">${cat}</div>`;
         grupo.forEach(p => {
             const tieneImg = p.imagen && p.imagen.trim() !== '';
+            // Compatibilidad con registros viejos que tenían canjeable:bool
+            const aparece = p.aparece || (p.canjeable === false ? 'carga' : 'ambos');
+            const badgeInfo = {
+                carga: ['bg-emerald-600/80', '＋ Carga'],
+                canje: ['bg-rose-500/80',    '⇄ Canje'],
+                ambos: ['bg-blue-600/80',    '✦ Ambos'],
+                otro:  ['bg-slate-600/80',   '○ Oculto'],
+            }[aparece] || ['bg-slate-600/80', '○ Oculto'];
             lista.innerHTML += `
                 <div class="glass rounded-2xl overflow-hidden flex flex-col group hover:bg-white/[0.04] transition-all">
                     <div class="w-full h-40 bg-slate-900 overflow-hidden flex items-center justify-center relative">
@@ -764,9 +959,8 @@ function renderPanelProductos() {
                                    onerror="this.parentElement.innerHTML='<span class=\\'text-4xl\\'>🍔</span>'">`
                             : `<span class="text-4xl">🍔</span>`
                         }
-                        <span class="absolute top-3 right-3 px-2.5 py-1 rounded-full text-[9px] font-black backdrop-blur-md
-                            ${p.canjeable !== false ? 'bg-rose-500/80 text-white' : 'bg-emerald-600/80 text-white'}">
-                            ${p.canjeable !== false ? '⇄ Canjeable' : '+ Solo suma'}
+                        <span class="absolute top-3 right-3 px-2.5 py-1 rounded-full text-[9px] font-black backdrop-blur-md text-white ${badgeInfo[0]}">
+                            ${badgeInfo[1]}
                         </span>
                     </div>
                     <div class="p-5 flex flex-col gap-3 flex-1">
@@ -774,11 +968,15 @@ function renderPanelProductos() {
                             <p class="font-bold text-white text-sm leading-tight">${p.nombre}</p>
                             <p class="text-[10px] text-slate-500 mt-0.5 uppercase font-semibold">${p.categoria || 'General'}</p>
                         </div>
-                        <div class="flex items-center justify-between border-t border-white/5 pt-3 mt-auto">
-                            <span class="text-2xl font-black text-green-500">${p.puntos} <span class="text-xs font-bold text-slate-500">PTS</span></span>
+                        <div class="flex flex-col gap-2 border-t border-white/5 pt-3 mt-auto">
+                            <div class="flex items-center justify-between">
+                                ${(aparece === 'carga' || aparece === 'ambos') ? `<span class="text-sm font-black text-emerald-400">+${p.puntosCargar ?? p.puntos ?? 0} <span class="text-[10px] font-bold text-slate-500">al cargar</span></span>` : ''}
+                                ${(aparece === 'canje' || aparece === 'ambos') ? `<span class="text-sm font-black text-rose-400">-${p.puntosCanje ?? p.puntos ?? 0} <span class="text-[10px] font-bold text-slate-500">al canjear</span></span>` : ''}
+                                ${aparece === 'otro' ? `<span class="text-xs text-slate-600 italic font-bold">Sin puntos definidos</span>` : ''}
+                            </div>
                             <div class="flex gap-2">
-                                <button onclick="editarProducto('${p.id}')" class="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-blue-800/30 text-slate-400 hover:text-blue-400 text-[10px] font-bold border border-white/5 transition-all">Editar</button>
-                                <button onclick="confirmarEliminar('${p.id}')" class="px-3 py-1.5 rounded-lg bg-rose-500/10 text-rose-400 text-[10px] font-bold hover:bg-rose-500/20 border border-rose-500/10 transition-all">Eliminar</button>
+                                <button onclick="editarProducto('${p.id}')" class="flex-1 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-blue-800/30 text-slate-400 hover:text-blue-400 text-[10px] font-bold border border-white/5 transition-all">Editar</button>
+                                <button onclick="confirmarEliminar('${p.id}')" class="flex-1 px-3 py-1.5 rounded-lg bg-rose-500/10 text-rose-400 text-[10px] font-bold hover:bg-rose-500/20 border border-rose-500/10 transition-all">Eliminar</button>
                             </div>
                         </div>
                     </div>
@@ -807,13 +1005,24 @@ function abrirFormProducto() {
     productoEditandoId = null;
     document.getElementById("formProdNombre").value    = "";
     document.getElementById("formProdCategoria").value = "";
-    document.getElementById("formProdPuntos").value    = "";
-    document.getElementById("formProdCanjeable").value = "true";
+    document.getElementById("formProdPuntosCargar").value = "";
+    document.getElementById("formProdPuntosCanje").value  = "";
+    document.getElementById("formProdAparece").value   = "";
     document.getElementById("formProdImagen").value    = "";
     document.getElementById("imgPreview").classList.add("hidden");
     document.getElementById("imgPreviewPlaceholder").classList.remove("hidden");
     document.getElementById("tituloFormProd").textContent    = "Nuevo Producto";
     document.getElementById("btnGuardarProdText").textContent = "Guardar Producto";
+    // Reset visual botones aparece
+    document.querySelectorAll('.aparece-btn').forEach(b => {
+        b.classList.remove('border-emerald-500','text-emerald-400','bg-emerald-500/10',
+                           'border-rose-500','text-rose-400','bg-rose-500/10',
+                           'border-blue-500','text-blue-400','bg-blue-500/10',
+                           'border-slate-400','text-slate-300','bg-slate-700/40');
+        b.classList.add('border-slate-700','bg-slate-900','text-slate-400');
+    });
+    document.getElementById('bloquePuntosCargar').classList.add('hidden');
+    document.getElementById('bloquePuntosCanje').classList.add('hidden');
     document.getElementById("formProducto").classList.remove("hidden");
     document.getElementById("formProdNombre").focus();
 }
@@ -827,13 +1036,16 @@ function editarProducto(id) {
     const p = productos.find(x => x.id === id);
     if (!p) return;
     productoEditandoId = id;
+    // Compatibilidad con registros viejos
+    const aparece = p.aparece || (p.canjeable === false ? 'carga' : 'ambos');
     document.getElementById("formProdNombre").value    = p.nombre;
     document.getElementById("formProdCategoria").value = p.categoria || "";
-    document.getElementById("formProdPuntos").value    = p.puntos;
-    document.getElementById("formProdCanjeable").value = p.canjeable === false ? "false" : "true";
+    document.getElementById("formProdPuntosCargar").value = p.puntosCargar ?? p.puntos ?? "";
+    document.getElementById("formProdPuntosCanje").value  = p.puntosCanje  ?? p.puntos ?? "";
     document.getElementById("formProdImagen").value    = p.imagen || "";
     document.getElementById("tituloFormProd").textContent    = "Editar Producto";
     document.getElementById("btnGuardarProdText").textContent = "Guardar Cambios";
+    setAparece(aparece);
     previewImagen();
     document.getElementById("formProducto").classList.remove("hidden");
     document.getElementById("formProdNombre").focus();
@@ -842,14 +1054,28 @@ function editarProducto(id) {
 async function guardarProducto() {
     const nombre    = document.getElementById("formProdNombre").value.trim();
     const categoria = document.getElementById("formProdCategoria").value.trim() || "General";
-    const puntos    = Number(document.getElementById("formProdPuntos").value);
-    const canjeable = document.getElementById("formProdCanjeable").value === "true";
+    const aparece   = document.getElementById("formProdAparece").value;
     const imagen    = document.getElementById("formProdImagen").value.trim();
 
-    if (!nombre || !puntos) { showToast("Completá nombre y puntos.", "warn"); return; }
+    if (!nombre) { showToast("Completá el nombre del producto.", "warn"); return; }
+    if (!aparece) { showToast("Elegí dónde aparece el producto.", "warn"); return; }
+
+    const puntosCargar = Number(document.getElementById("formProdPuntosCargar").value) || 0;
+    const puntosCanje  = Number(document.getElementById("formProdPuntosCanje").value)  || 0;
+
+    if ((aparece === 'carga' || aparece === 'ambos') && !puntosCargar) {
+        showToast("Ingresá los puntos que suma al cargar.", "warn"); return;
+    }
+    if ((aparece === 'canje' || aparece === 'ambos') && !puntosCanje) {
+        showToast("Ingresá los puntos que cuesta el canje.", "warn"); return;
+    }
+
+    // Campo legacy 'puntos' y 'canjeable' para compatibilidad con otros módulos
+    const canjeable = aparece === 'canje' || aparece === 'ambos';
+    const puntos    = aparece === 'carga' ? puntosCargar : (aparece === 'canje' ? puntosCanje : puntosCargar);
 
     setBtnLoading('btnGuardarProd', 'btnGuardarProdText', 'btnGuardarProdSpinner', true, 'Guardar Producto');
-    const prod = { nombre, categoria, puntos, canjeable, imagen };
+    const prod = { nombre, categoria, aparece, puntosCargar, puntosCanje, puntos, canjeable, imagen };
     if (productoEditandoId) prod.id = productoEditandoId;
 
     await saveProducto(prod);
@@ -875,37 +1101,36 @@ async function confirmarEliminar(id) {
     });
 }
 
-// ── LÓGICA DE LÍMITE DIARIO DE CANJES ─────────────────────────────
+// ── LÓGICA DE LÍMITE DIARIO DE CARGA ──────────────────────────────
 function verificarLimiteCanje() {
     if (!clienteActual) return;
     const hoy = new Date().toISOString().split('T')[0];
-    
-    let canjesHoy = 0;
+
+    let cargasHoy = 0;
     let anulacionesHoy = 0;
-    
-    // Contamos si hoy tuvo un canje (y restamos si ese canje se anuló por error del cajero)
+
+    // Contamos cargas del día (movimientos positivos que NO son el bono de bienvenida)
     clienteActual.historial.forEach(h => {
         if (h.fecha === hoy) {
-            if (h.descripcion.startsWith('Canje:')) canjesHoy++;
-            if (h.descripcion.startsWith('Anulación: Canje:')) anulacionesHoy++;
+            if (h.puntos > 0 && !h.descripcion.startsWith('Bono') && !h.descripcion.startsWith('Anulación:')) cargasHoy++;
+            if (h.descripcion.startsWith('Anulación:') && h.puntos < 0) anulacionesHoy++;
         }
     });
-    
-    const yaCanjeo = (canjesHoy - anulacionesHoy) > 0;
-    
-    const contNormal = document.getElementById("contenedorCanjeNormal");
-    const contBloqueo = document.getElementById("mensajeBloqueoCanje");
-    
+
+    const yaCargoHoy = (cargasHoy - anulacionesHoy) > 0;
+
+    const contNormal  = document.getElementById("contenedorCargarNormal");
+    const contBloqueo = document.getElementById("mensajeBloqueoCargar");
+
     if (contNormal && contBloqueo) {
-        if (yaCanjeo) {
+        if (yaCargoHoy) {
             contNormal.classList.add("hidden");
             contBloqueo.classList.remove("hidden");
         } else {
             contNormal.classList.remove("hidden");
             contBloqueo.classList.add("hidden");
-            // Limpiamos los campos por las dudas
-            document.getElementById("selectProductoRestar").value = "";
-            document.getElementById("previewPuntosRestar").classList.add("hidden");
+            document.getElementById("selectProductoAgregar").value = "";
+            document.getElementById("previewPuntosAgregar").classList.add("hidden");
         }
     }
 }
