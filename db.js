@@ -98,7 +98,36 @@ async function deleteProducto(id) {
   }
 }
 
-// Buscar usuario por su PIN de 4 dígitos
+
+// ── TÉRMINOS Y CONDICIONES ─────────────────────────────────
+// Obtener el estado de aceptación de TyC de un usuario
+async function getTycStatus(tarjeta) {
+  try {
+    const docRef = db.collection("tyc_aceptaciones").doc(tarjeta);
+    const docSnap = await docRef.get();
+    if (docSnap.exists) return docSnap.data();
+    return null;
+  } catch (error) {
+    console.error("Error consultando TyC:", error);
+    return null;
+  }
+}
+
+// Registrar la aceptación o rechazo de TyC de un usuario
+async function registrarAceptacionTyc(tarjeta, aceptado, nombre) {
+  try {
+    const data = {
+      tarjeta,
+      nombre,
+      aceptado,
+      fecha: new Date().toISOString(),
+    };
+    await db.collection("tyc_aceptaciones").doc(tarjeta).set(data);
+    console.log(`TyC ${aceptado ? 'aceptado' : 'rechazado'} para`, tarjeta);
+  } catch (error) {
+    console.error("Error registrando TyC:", error);
+  }
+}
 async function getUsuarioByPin(pin) {
   try {
     const snapshot = await db.collection("usuarios").where("pin", "==", pin).limit(1).get();
