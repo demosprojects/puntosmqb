@@ -76,6 +76,7 @@
             <button onclick="switchTab('gestion')" id="btn-tab-gestion" class="text-xs font-bold uppercase tracking-widest tab-active pb-1">Gestión</button>
             <button onclick="switchTab('stock')" id="btn-tab-stock" class="text-xs font-bold uppercase tracking-widest text-slate-500 pb-1">Tarjetas</button>
             <button onclick="switchTab('productos')" id="btn-tab-productos" class="text-xs font-bold uppercase tracking-widest text-slate-500 pb-1">Productos</button>
+            <button onclick="switchTab('tyc')" id="btn-tab-tyc" class="text-xs font-bold uppercase tracking-widest text-slate-500 pb-1">TyC</button>
             <div class="h-4 w-px bg-white/10"></div>
             <button onclick="cerrarSesion()" title="Cerrar sesión"
                 class="flex items-center gap-2 text-slate-500 hover:text-rose-400 transition-colors text-[10px] font-bold uppercase tracking-widest group">
@@ -282,7 +283,7 @@
                         <button onclick="abrirModalProductos('canje')"
                             class="w-full glass border border-rose-500/20 hover:border-rose-500/50 hover:bg-rose-500/5 rounded-[2.5rem] p-8 flex flex-col items-center justify-center gap-4 transition-all group active:scale-[0.98]">
                             <div class="w-16 h-16 rounded-2xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center group-hover:bg-rose-500/25 transition-all">
-                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none"><path d="M7 16l-4-4 4-4M17 8l4 4-4 4M14 4l-4 16" stroke="#fb7185" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none"><path d="M7 4l-4 4 4 4" stroke="#fb7185" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 8h14a4 4 0 014 4v1" stroke="#fb7185" stroke-width="2.5" stroke-linecap="round"/><path d="M17 20l4-4-4-4" stroke="#fb7185" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 16H7a4 4 0 01-4-4v-1" stroke="#fb7185" stroke-width="2.5" stroke-linecap="round"/></svg>
                             </div>
                             <div class="text-center">
                                 <p class="text-lg font-black uppercase italic text-white tracking-tight">Registrar Canje</p>
@@ -292,7 +293,14 @@
 
                     </div>
                     <section>
-                        <h3 class="text-lg font-bold uppercase italic mb-6 px-2">Historial</h3>
+                        <div class="flex items-center justify-between mb-6 px-2">
+                            <h3 class="text-lg font-bold uppercase italic">Historial</h3>
+                            <button id="btnAnularGestion" onclick="anularDesdeGestion()"
+                                class="flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 hover:border-amber-500/40 text-amber-400 text-[10px] font-black uppercase tracking-widest transition-all group">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                Anular último
+                            </button>
+                        </div>
                         <div id="historial" class="bg-slate-900/30 border border-white/5 rounded-[2.5rem] overflow-hidden"></div>
                     </section>
                 </div>
@@ -462,8 +470,81 @@
             </div>
         </div>
 
-        <div id="listaProductos" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"></div>
+        <!-- Buscador + Filtros -->
+        <div class="flex flex-col md:flex-row gap-3 items-stretch md:items-center">
+            <div class="relative flex-1">
+                <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 flex items-center">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/><path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                </span>
+                <input id="prodBuscador" oninput="renderPanelProductos()" placeholder="Buscar por nombre o categoría..."
+                    class="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-900 border border-slate-800 outline-none focus:border-blue-500 text-white text-sm transition-all">
+            </div>
+            <div class="flex gap-2 flex-wrap">
+                <button onclick="setProdFiltro('todos')" id="pfiltro-todos" class="filtro-btn filtro-active px-4 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all">Todos</button>
+                <button onclick="setProdFiltro('carga')" id="pfiltro-carga" class="filtro-btn px-4 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all">＋ Solo Carga</button>
+                <button onclick="setProdFiltro('canje')" id="pfiltro-canje" class="filtro-btn px-4 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all">⇄ Solo Canje</button>
+                <button onclick="setProdFiltro('ambos')" id="pfiltro-ambos" class="filtro-btn px-4 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all">✦ Ambos</button>
+                <button onclick="setProdFiltro('otro')" id="pfiltro-otro" class="filtro-btn px-4 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all">○ Ocultos</button>
+            </div>
+        </div>
 
+        <p id="prodContador" class="text-[10px] text-slate-500 font-bold uppercase tracking-widest px-1"></p>
+
+        <div id="listaProductos" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"></div>
+        <div id="prodVacio" class="hidden col-span-full p-12 text-center text-slate-500 italic text-sm glass rounded-[2rem]">No se encontraron productos con ese filtro.</div>
+
+    </div>
+
+    <!-- ══ SECCIÓN TYC ══════════════════════════════════════════════ -->
+    <div id="section-tyc" class="hidden space-y-6 animate-in fade-in duration-500" style="display:none !important">
+
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+                <h2 class="text-2xl font-black italic uppercase">Aceptaciones de TyC</h2>
+                <p class="text-xs text-slate-500 mt-1 font-medium">Clientes que aceptaron los Términos y Condiciones desde la app.</p>
+            </div>
+            <button onclick="recargarTyc()" id="btnRecargarTyc"
+                class="flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all text-slate-400 hover:text-white">
+                <svg id="iconRecargarTyc" width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Recargar
+            </button>
+        </div>
+
+        <!-- Contador -->
+        <p id="tycContador" class="text-[10px] text-slate-500 font-bold uppercase tracking-widest px-1"></p>
+
+        <!-- Buscador -->
+        <div class="relative max-w-sm">
+            <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 flex items-center">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/><path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            </span>
+            <input id="tycBuscador" oninput="renderTyc()" placeholder="Buscar por nombre o tarjeta..."
+                class="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-900 border border-slate-800 outline-none focus:border-blue-500 text-white text-sm transition-all">
+        </div>
+
+        <!-- Tabla -->
+        <div class="glass rounded-[2rem] overflow-hidden border border-white/5">
+            <table class="w-full">
+                <thead>
+                    <tr class="border-b border-white/10 bg-white/[0.02]">
+                        <th class="p-5 text-left text-[10px] font-black uppercase tracking-widest text-slate-500">Cliente</th>
+                        <th class="p-5 text-left text-[10px] font-black uppercase tracking-widest text-slate-500">Nº Tarjeta</th>
+                        <th class="p-5 text-left text-[10px] font-black uppercase tracking-widest text-slate-500">Estado</th>
+                        <th class="p-5 text-left text-[10px] font-black uppercase tracking-widest text-slate-500">Fecha</th>
+                    </tr>
+                </thead>
+                <tbody id="tablaTyc"></tbody>
+            </table>
+
+            <!-- Skeleton loader -->
+            <div id="tycSkeleton" class="p-6 space-y-3">
+                <div class="skeleton h-10 w-full rounded-xl"></div>
+                <div class="skeleton h-10 w-full rounded-xl"></div>
+                <div class="skeleton h-10 w-full rounded-xl"></div>
+            </div>
+
+            <div id="tycVacio" class="hidden p-12 text-center text-slate-500 italic text-sm">No se encontraron registros.</div>
+        </div>
     </div>
 
     </main>
