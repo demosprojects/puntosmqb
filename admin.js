@@ -4,6 +4,41 @@ let tarjetaBuscadaActual = null;
 // ── Helpers UI ─────────────────────────────────────────────
 function hideLoader() { document.getElementById('global-loader')?.classList.add('hidden-loader'); }
 
+// ── Scroll lock ────────────────────────────────────────────
+let _scrollLockCount = 0;
+function lockScroll() {
+    _scrollLockCount++;
+    if (_scrollLockCount === 1) {
+        const scrollY = window.scrollY;
+        document.body.style.overflow = 'hidden';
+        document.body.style.position = 'fixed';
+        document.body.style.top      = `-${scrollY}px`;
+        document.body.style.width    = '100%';
+        document.body.dataset.scrollY = scrollY;
+    }
+}
+function unlockScroll() {
+    _scrollLockCount = Math.max(0, _scrollLockCount - 1);
+    if (_scrollLockCount === 0) {
+        const scrollY = parseInt(document.body.dataset.scrollY || '0', 10);
+        document.body.style.overflow = '';
+        document.body.style.position = '';
+        document.body.style.top      = '';
+        document.body.style.width    = '';
+        window.scrollTo(0, scrollY);
+    }
+}
+
+// ── Generador de ID de Transacción ────────────────────────
+// Produce un código como "MQB-7A2F" único por movimiento.
+// Se guarda en el historial y se muestra en el comprobante del cliente.
+function generarIdTx() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // sin O,0,1,I para evitar confusiones
+    let parte = '';
+    for (let i = 0; i < 4; i++) parte += chars[Math.floor(Math.random() * chars.length)];
+    return `MQB-${parte}`;
+}
+
 function setBtnLoading(btnId, textId, spinnerId, loading, label) {
     const btn = document.getElementById(btnId);
     const text = document.getElementById(textId);
@@ -57,11 +92,13 @@ function abrirModalPin() {
     document.getElementById('pinInput').value = '';
     document.getElementById('pinError').classList.add('hidden');
     document.getElementById('modalPin').classList.remove('hidden');
+    lockScroll();
     setTimeout(() => document.getElementById('pinInput').focus(), 100);
 }
 
 function cerrarModalPin() {
     document.getElementById('modalPin').classList.add('hidden');
+    unlockScroll();
     // Volver a Gestión si cancela
     switchTab('gestion');
 }
@@ -86,6 +123,7 @@ async function verificarPin() {
     if (hash === OWNER_PIN_HASH) {
         productosPinVerificado = true;
         document.getElementById('modalPin').classList.add('hidden');
+        unlockScroll();
         // Activa la pestaña correctamente via switchTab
         switchTab('productos');
     } else {
@@ -107,7 +145,7 @@ function switchTab(tab) {
         return;
     }
 
-    const tabs = ['gestion', 'stock', 'productos'];
+    const tabs = ['gestion', 'stock', 'productos', 'tyc'];
     tabs.forEach(t => {
         const sec = document.getElementById(`section-${t}`);
         if (sec) {
@@ -128,6 +166,7 @@ function switchTab(tab) {
 
     if (tab === 'stock') renderStock();
     if (tab === 'productos') renderPanelProductos();
+    if (tab === 'tyc') cargarTyc();
 }
 
 
@@ -277,7 +316,7 @@ async function activarTarjeta() {
     usuarios[index] = {
         ...usuarios[index],
         asignada: true, nombre, telefono: tel, puntos: 100, pin: nuevoPin,
-        historial: [{ fecha: new Date().toISOString().split('T')[0], descripcion: "Bono Bienvenida", puntos: 100 }]
+        historial: [{ idTx: generarIdTx(), fecha: new Date().toISOString().split('T')[0], descripcion: "Bono Bienvenida", puntos: 100 }]
     };
     await updateUsuario(usuarios[index]);
     
@@ -287,6 +326,7 @@ async function activarTarjeta() {
     document.getElementById('modalPinNombre').innerText = nombre;
     document.getElementById('modalPinGenerado').innerText = nuevoPin;
     document.getElementById('modalPinActivacion').classList.remove('hidden');
+    lockScroll();
     
     document.getElementById("nuevoNombre").value = "";
     document.getElementById("nuevoTel").value = "";
@@ -295,6 +335,7 @@ async function activarTarjeta() {
 
 function cerrarModalPinActivacion() {
     document.getElementById('modalPinActivacion').classList.add('hidden');
+    unlockScroll();
     volverAlInicio();
 }
 
@@ -321,22 +362,42 @@ function renderCliente() {
 
 function renderHistorial() {
     const cont = document.getElementById("historial");
+    const btnAnular = document.getElementById("btnAnularGestion");
     cont.innerHTML = "";
+
     if (clienteActual.historial.length === 0) {
         cont.innerHTML = `<div class="p-10 text-center text-slate-500 italic">Sin movimientos.</div>`;
+        if (btnAnular) btnAnular.classList.add("hidden");
         return;
     }
-    [...clienteActual.historial].reverse().forEach((h, index, array) => {
-        const esSuma = h.puntos > 0;
+
+    const historialRev = [...clienteActual.historial].reverse();
+    const ultimo = clienteActual.historial[clienteActual.historial.length - 1];
+    const puedeAnular = ultimo && !ultimo.descripcion.startsWith('Anulación:');
+    if (btnAnular) btnAnular.classList.toggle("hidden", !puedeAnular);
+
+    historialRev.forEach((h, index, array) => {
+        const esSuma  = h.puntos > 0;
+        const esUltimo = index === 0 && puedeAnular;
+        
+        // Verificamos si tiene ID (los movimientos viejos antes de esta actualización no tendrán)
+        const txIdText = h.idTx ? `<span class="ml-2 text-blue-400/80 font-mono tracking-widest bg-blue-500/10 px-1.5 py-0.5 rounded text-[8px]">ID: ${h.idTx}</span>` : '';
+
         cont.innerHTML += `
-            <div class="flex justify-between items-center p-5 ${index !== array.length - 1 ? 'border-b border-white/5' : ''}">
+            <div class="flex justify-between items-center p-5 ${index !== array.length - 1 ? 'border-b border-white/5' : ''} ${esUltimo ? 'bg-amber-500/[0.04] border-l-2 border-l-amber-500/30' : ''}">
                 <div class="flex items-center gap-4">
                     <div class="w-10 h-10 rounded-full flex items-center justify-center ${esSuma ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'}">
                         ${esSuma ? '↑' : '↓'}
                     </div>
                     <div>
-                        <p class="text-sm font-bold text-slate-200">${h.descripcion}</p>
-                        <p class="text-[10px] text-slate-500 uppercase font-black">${h.fecha}</p>
+                        <div class="flex items-center gap-2">
+                            <p class="text-sm font-bold text-slate-200">${h.descripcion}</p>
+                            ${esUltimo ? `<span class="text-[9px] font-black uppercase tracking-widest text-amber-400/70 bg-amber-500/10 px-2 py-0.5 rounded-full">Último</span>` : ''}
+                        </div>
+                        <div class="flex items-center mt-0.5">
+                            <p class="text-[10px] text-slate-500 uppercase font-black">${h.fecha}</p>
+                            ${txIdText}
+                        </div>
                     </div>
                 </div>
                 <span class="font-black ${esSuma ? 'text-emerald-400' : 'text-rose-400'} text-lg">
@@ -345,8 +406,41 @@ function renderHistorial() {
             </div>`;
     });
 }
+// Anular directamente desde la pantalla de gestión sin abrir modales intermedios
+function anularDesdeGestion() {
+    if (!clienteActual || !clienteActual.historial || clienteActual.historial.length === 0) return;
 
-// ── Selects de acreditar / debitar ─────────────────────────
+    const ultimo = clienteActual.historial[clienteActual.historial.length - 1];
+
+    if (ultimo.descripcion.startsWith('Anulación:')) {
+        showToast('No se puede anular una anulación.', 'warn');
+        return;
+    }
+
+    showConfirm({
+        titulo: 'Anular movimiento',
+        mensaje: `¿Anular "${ultimo.descripcion}" (${ultimo.puntos > 0 ? '+' : ''}${ultimo.puntos} pts)?`,
+        tipo: 'warn',
+        labelAceptar: 'Anular',
+        onAceptar: async () => {
+            const puntosRevertidos = -ultimo.puntos;
+            clienteActual.puntos += puntosRevertidos;
+            clienteActual.historial.push({
+                idTx: generarIdTx(),
+                fecha: new Date().toISOString().split('T')[0],
+                descripcion: `Anulación: ${ultimo.descripcion}`,
+                puntos: puntosRevertidos
+            });
+            await updateUsuario(clienteActual);
+            // Sync local cache
+            const idx = usuarios.findIndex(u => u.tarjeta === clienteActual.tarjeta);
+            if (idx !== -1) usuarios[idx] = clienteActual;
+            renderCliente();
+            verificarLimiteCanje();
+            showToast(`Anulado. Puntos ajustados a ${clienteActual.puntos}.`, 'success');
+        }
+    });
+}
 function populateSelects() {
     const acreditar = document.getElementById("selectProductoAgregar");
     const debitar   = document.getElementById("selectProductoRestar");
@@ -400,7 +494,7 @@ function abrirModalProductos(modo) {
     const esCarga = modo === 'carga';
     const icono   = esCarga
         ? `<div class="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="#34d399" stroke-width="2.5" stroke-linecap="round"/></svg></div>`
-        : `<div class="w-10 h-10 rounded-xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M7 16l-4-4 4-4M17 8l4 4-4 4M14 4l-4 16" stroke="#fb7185" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>`;
+        : `<div class="w-10 h-10 rounded-xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M7 4l-4 4 4 4" stroke="#fb7185" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 8h14a4 4 0 014 4v1" stroke="#fb7185" stroke-width="2.5" stroke-linecap="round"/><path d="M17 20l4-4-4-4" stroke="#fb7185" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 16H7a4 4 0 01-4-4v-1" stroke="#fb7185" stroke-width="2.5" stroke-linecap="round"/></svg></div>`;
 
     document.getElementById('modalProdIcono').innerHTML    = icono;
     document.getElementById('modalProdTitulo').textContent = esCarga ? 'Cargar Compra' : 'Registrar Canje';
@@ -408,12 +502,14 @@ function abrirModalProductos(modo) {
 
     renderModalGrid('');
     document.getElementById('modalProductos').classList.remove('hidden');
+    lockScroll();
     setTimeout(() => document.getElementById('modalProdBuscador').focus(), 150);
 }
 
 function cerrarModalProductos() {
     document.getElementById('modalProductos').classList.add('hidden');
     document.getElementById('modalConfirmOp').classList.add('hidden');
+    unlockScroll();
     modalModoActual = null;
     productoSeleccionado = null;
 }
@@ -556,10 +652,10 @@ async function confirmarOperacion() {
 
     if (esCarga) {
         clienteActual.puntos += pts;
-        clienteActual.historial.push({ fecha: new Date().toISOString().split('T')[0], descripcion: productoSeleccionado.nombre, puntos: pts });
+        clienteActual.historial.push({ idTx: generarIdTx(), fecha: new Date().toISOString().split('T')[0], descripcion: productoSeleccionado.nombre, puntos: pts });
     } else {
         clienteActual.puntos -= pts;
-        clienteActual.historial.push({ fecha: new Date().toISOString().split('T')[0], descripcion: `Canje: ${productoSeleccionado.nombre}`, puntos: -pts });
+        clienteActual.historial.push({ idTx: generarIdTx(), fecha: new Date().toISOString().split('T')[0], descripcion: `Canje: ${productoSeleccionado.nombre}`, puntos: -pts });
     }
 
     await updateUsuario(clienteActual);
@@ -714,11 +810,13 @@ function abrirModalEditar(tarjeta) {
     }
 
     document.getElementById('modalEditarTarjeta').classList.remove('hidden');
+    lockScroll();
     document.getElementById('editNombre').focus();
 }
 
 function cerrarModalEditar() {
     document.getElementById('modalEditarTarjeta').classList.add('hidden');
+    unlockScroll();
     tarjetaEditandoActual = null;
 }
 
@@ -764,6 +862,7 @@ function showConfirm({ titulo, mensaje, tipo = 'danger', labelAceptar = 'Confirm
     btnAcep.textContent   = labelAceptar;
 
     modal.classList.remove('hidden');
+    lockScroll();
 
     // Clonar para limpiar listeners anteriores
     const newAcep = btnAcep.cloneNode(true);
@@ -776,10 +875,12 @@ function showConfirm({ titulo, mensaje, tipo = 'danger', labelAceptar = 'Confirm
 
     newAcep.addEventListener('click', () => {
         modal.classList.add('hidden');
+        unlockScroll();
         onAceptar();
     });
     newCan.addEventListener('click', () => {
         modal.classList.add('hidden');
+        unlockScroll();
     });
 }
 
@@ -849,6 +950,7 @@ async function anularUltimoMovimiento() {
             const puntosRevertidos = -ultimo.puntos;
             u.puntos += puntosRevertidos;
             u.historial.push({
+                idTx: generarIdTx(),
                 fecha: new Date().toISOString().split('T')[0],
                 descripcion: `Anulación: ${ultimo.descripcion}`,
                 puntos: puntosRevertidos
@@ -927,23 +1029,59 @@ function setAparece(valor) {
     bj.classList.toggle('hidden', valor === 'carga' || valor === 'otro');
 }
 
+// Estado del filtro de productos
+let prodFiltroActivo = 'todos';
+
+function setProdFiltro(filtro) {
+    prodFiltroActivo = filtro;
+    const ids = ['todos', 'carga', 'canje', 'ambos', 'otro'];
+    ids.forEach(id => {
+        const btn = document.getElementById(`pfiltro-${id}`);
+        if (!btn) return;
+        btn.classList.toggle('filtro-active', id === filtro);
+        if (id === filtro) btn.classList.remove('filtro-btn');
+        else btn.classList.add('filtro-btn');
+    });
+    renderPanelProductos();
+}
+
 function renderPanelProductos() {
     const lista = document.getElementById("listaProductos");
+    const vacio = document.getElementById("prodVacio");
+    const contador = document.getElementById("prodContador");
     if (!lista) return;
     lista.innerHTML = "";
 
-    if (productos.length === 0) {
-        lista.innerHTML = `<div class="col-span-full p-10 text-center text-slate-500 italic text-sm">Sin productos. Agregá el primero.</div>`;
-        return;
+    const q = (document.getElementById('prodBuscador')?.value || '').toLowerCase().trim();
+
+    let filtrados = productos.filter(p => {
+        const aparece = p.aparece || (p.canjeable === false ? 'carga' : 'ambos');
+        const matchFiltro = prodFiltroActivo === 'todos' || aparece === prodFiltroActivo;
+        const matchBusca = !q ||
+            (p.nombre || '').toLowerCase().includes(q) ||
+            (p.categoria || '').toLowerCase().includes(q);
+        return matchFiltro && matchBusca;
+    });
+
+    // Contador
+    if (contador) {
+        contador.textContent = `${filtrados.length} producto${filtrados.length !== 1 ? 's' : ''} encontrado${filtrados.length !== 1 ? 's' : ''} · ${productos.length} en total`;
     }
 
-    const categorias = [...new Set(productos.map(p => p.categoria || 'General'))];
+    if (filtrados.length === 0) {
+        lista.innerHTML = '';
+        if (vacio) vacio.classList.remove('hidden');
+        populateSelects();
+        return;
+    }
+    if (vacio) vacio.classList.add('hidden');
+
+    const categorias = [...new Set(filtrados.map(p => p.categoria || 'General'))];
     categorias.forEach(cat => {
-        const grupo = productos.filter(p => (p.categoria || 'General') === cat);
+        const grupo = filtrados.filter(p => (p.categoria || 'General') === cat);
         lista.innerHTML += `<div class="col-span-full text-[10px] font-black uppercase tracking-widest text-slate-500 pt-2 pb-1 border-b border-white/5">${cat}</div>`;
         grupo.forEach(p => {
             const tieneImg = p.imagen && p.imagen.trim() !== '';
-            // Compatibilidad con registros viejos que tenían canjeable:bool
             const aparece = p.aparece || (p.canjeable === false ? 'carga' : 'ambos');
             const badgeInfo = {
                 carga: ['bg-emerald-600/80', '＋ Carga'],
@@ -1133,4 +1271,95 @@ function verificarLimiteCanje() {
             document.getElementById("previewPuntosAgregar").classList.add("hidden");
         }
     }
+}
+
+// ── Términos y Condiciones ──────────────────────────────────
+let tycData = [];
+let tycCargado = false;
+
+async function cargarTyc() {
+    if (tycCargado) { renderTyc(); return; }
+    document.getElementById('tycSkeleton')?.classList.remove('hidden');
+    document.getElementById('tablaTyc').innerHTML = '';
+    document.getElementById('tycVacio')?.classList.add('hidden');
+
+    try {
+        const snapshot = await db.collection("tyc_aceptaciones").get();
+        tycData = snapshot.docs.map(doc => doc.data());
+        tycCargado = true;
+    } catch (e) {
+        console.error("Error cargando TyC:", e);
+        showToast('Error al cargar las aceptaciones.', 'error');
+    }
+
+    document.getElementById('tycSkeleton')?.classList.add('hidden');
+    renderTyc();
+}
+
+function recargarTyc() {
+    tycCargado = false;
+    tycData = [];
+    // Spin the icon
+    const icon = document.getElementById('iconRecargarTyc');
+    if (icon) { icon.style.transition = 'transform 0.6s'; icon.style.transform = 'rotate(360deg)'; setTimeout(() => { icon.style.transform = ''; }, 700); }
+    cargarTyc();
+}
+
+function renderTyc() {
+    const q = (document.getElementById('tycBuscador')?.value || '').toLowerCase().trim();
+    const filtrados = tycData.filter(r =>
+        (r.nombre || '').toLowerCase().includes(q) ||
+        (r.tarjeta || '').toLowerCase().includes(q)
+    );
+
+    const tbody = document.getElementById('tablaTyc');
+    const vacio = document.getElementById('tycVacio');
+    const contador = document.getElementById('tycContador');
+
+    const aceptados = tycData.filter(r => r.aceptado).length;
+    contador.textContent = `${aceptados} aceptación${aceptados !== 1 ? 'es' : ''} · ${tycData.length} registro${tycData.length !== 1 ? 's' : ''} totales`;
+
+    if (filtrados.length === 0) {
+        tbody.innerHTML = '';
+        vacio?.classList.remove('hidden');
+        return;
+    }
+    vacio?.classList.add('hidden');
+
+    tbody.innerHTML = filtrados
+        .sort((a, b) => new Date(b.fecha) - new Date(a.fecha))
+        .map((r, i) => {
+            const tarjetaFmt = (r.tarjeta || '').replace(/(\d{4})(\d{4})/, '$1 $2');
+            const fecha = r.fecha ? new Date(r.fecha).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
+            const esPar = i % 2 === 0;
+            return `
+            <tr class="${esPar ? '' : 'bg-white/[0.015]'} border-b border-white/5 last:border-0 hover:bg-white/[0.03] transition-colors">
+                <td class="p-5">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center justify-center flex-shrink-0">
+                            <span class="text-xs font-black text-blue-400">${(r.nombre || '?')[0].toUpperCase()}</span>
+                        </div>
+                        <span class="text-sm font-bold text-white">${r.nombre || '—'}</span>
+                    </div>
+                </td>
+                <td class="p-5">
+                    <span class="font-mono text-sm text-blue-300/70 tracking-[0.15em]">${tarjetaFmt || '—'}</span>
+                </td>
+                <td class="p-5">
+                    ${r.aceptado
+                        ? `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                               <svg width="10" height="10" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+                               Aceptó
+                           </span>`
+                        : `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                               <svg width="10" height="10" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+                               Rechazó
+                           </span>`
+                    }
+                </td>
+                <td class="p-5">
+                    <span class="text-xs text-slate-500 font-semibold">${fecha}</span>
+                </td>
+            </tr>`;
+        }).join('');
 }
