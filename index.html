@@ -6,7 +6,6 @@
     <title>Más que Burgers</title>
     <link rel="icon" href="https://imagedelivery.net/ut8GNCA1obOu4JnXrJ_J9Q/e7b59903-06e0-48f8-1bb1-71bd6da8a800/public" type="image/x-icon">
 
-    <!-- PWA -->
     <link rel="manifest" href="manifest.json">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -16,6 +15,9 @@
     <link rel="apple-touch-icon" href="https://imagedelivery.net/ut8GNCA1obOu4JnXrJ_J9Q/e7b59903-06e0-48f8-1bb1-71bd6da8a800/public">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,700;0,800;1,700;1,800&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
     <style>
         :root {
             --blue: #2563eb;
@@ -319,6 +321,138 @@
         .actividad-body::-webkit-scrollbar { width: 3px; }
         .actividad-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.07); border-radius: 4px; }
 
+        /* MODAL COMPROBANTE */
+        #comprobanteOverlay {
+            position: fixed; inset: 0; z-index: 100000;
+            background: rgba(5,5,8,0.85);
+            backdrop-filter: blur(12px);
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.3s ease;
+            display: flex; align-items: center; justify-content: center;
+            padding: 1rem;
+        }
+        #comprobanteOverlay.open { opacity: 1; pointer-events: all; }
+        
+        #comprobantePanel {
+            width: 100%; max-width: 380px;
+            transform: scale(0.95);
+            transition: transform 0.4s cubic-bezier(.22,1,.36,1);
+        }
+        #comprobanteOverlay.open #comprobantePanel { transform: scale(1); }
+
+        /* MODAL TÉRMINOS Y CONDICIONES */
+        #tycOverlay {
+            position: fixed; inset: 0; z-index: 99998;
+            background: rgba(5,5,8,0.88);
+            backdrop-filter: blur(12px);
+            display: flex; align-items: flex-end; justify-content: center;
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.35s ease;
+        }
+        @media (min-width: 640px) {
+            #tycOverlay { align-items: center; }
+        }
+        #tycOverlay.open { opacity: 1; pointer-events: all; }
+
+        #tycPanel {
+            width: 100%; max-width: 540px;
+            background: #0d0d15;
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 2rem 2rem 0 0;
+            max-height: 92vh;
+            display: flex; flex-direction: column;
+            transform: translateY(100%);
+            transition: transform 0.45s cubic-bezier(.22,1,.36,1);
+            box-shadow: 0 -24px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(37,99,235,0.08);
+            overflow: hidden;
+        }
+        @media (min-width: 640px) {
+            #tycPanel {
+                border-radius: 2rem;
+                max-height: 80vh;
+                transform: translateY(24px) scale(0.96);
+                box-shadow: 0 40px 100px rgba(0,0,0,0.8), 0 0 0 1px rgba(37,99,235,0.1);
+            }
+        }
+        #tycOverlay.open #tycPanel {
+            transform: translateY(0) scale(1);
+        }
+
+        .tyc-header {
+            flex-shrink: 0;
+            padding: 20px 20px 16px;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            background: linear-gradient(180deg, rgba(37,99,235,0.06) 0%, transparent 100%);
+        }
+        .tyc-body {
+            overflow-y: auto; flex: 1;
+            padding: 20px;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255,255,255,0.08) transparent;
+        }
+        .tyc-body::-webkit-scrollbar { width: 3px; }
+        .tyc-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.09); border-radius: 4px; }
+
+        .tyc-footer {
+            flex-shrink: 0;
+            padding: 16px 20px 20px;
+            border-top: 1px solid rgba(255,255,255,0.06);
+            background: #0d0d15;
+        }
+
+        /* Indicador de scroll */
+        .tyc-scroll-hint {
+            position: absolute; bottom: 0; left: 0; right: 0; height: 48px;
+            background: linear-gradient(to top, #0d0d15, transparent);
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        /* Texto legal dentro del modal */
+        .tyc-section { margin-bottom: 18px; }
+        .tyc-section-title {
+            font-size: 10px; font-weight: 800; text-transform: uppercase;
+            letter-spacing: 0.12em; color: #60a5fa; margin-bottom: 8px;
+        }
+        .tyc-section p {
+            font-size: 11px; color: #94a3b8; line-height: 1.7; margin-bottom: 5px;
+        }
+        .tyc-section ul {
+            list-style: none; padding: 0; margin: 0;
+        }
+        .tyc-section ul li {
+            font-size: 11px; color: #94a3b8; line-height: 1.7;
+            padding-left: 14px; position: relative; margin-bottom: 3px;
+        }
+        .tyc-section ul li::before {
+            content: '·'; position: absolute; left: 4px; color: #334155; font-weight: 900;
+        }
+
+        /* Checkbox custom */
+        .tyc-checkbox-wrap {
+            display: flex; align-items: flex-start; gap: 10px;
+            cursor: pointer; -webkit-tap-highlight-color: transparent;
+        }
+        .tyc-checkbox-box {
+            width: 18px; height: 18px; flex-shrink: 0; margin-top: 1px;
+            border-radius: 5px; border: 1.5px solid #334155;
+            background: rgba(255,255,255,0.03);
+            display: flex; align-items: center; justify-content: center;
+            transition: border-color 0.2s, background 0.2s;
+        }
+        #tycCheckbox:checked ~ .tyc-checkbox-wrap .tyc-checkbox-box,
+        .tyc-checkbox-box.checked {
+            border-color: var(--blue); background: rgba(37,99,235,0.15);
+        }
+        .tyc-check-icon { display: none; }
+        .tyc-checkbox-box.checked .tyc-check-icon { display: block; }
+
+        #btnAceptarTyc {
+            transition: opacity 0.25s, transform 0.1s;
+        }
+        #btnAceptarTyc:disabled { opacity: 0.35; cursor: not-allowed; }
+        #btnAceptarTyc:not(:disabled):active { transform: scale(0.97); }
+
         /* BOTÓN NAV ACTIVIDAD */
         .btn-actividad {
             display: flex; align-items: center; gap: 5px;
@@ -349,7 +483,6 @@
 </head>
 <body>
 
-<!-- BANNER INSTALAR PWA -->
 <div id="installBanner" class="hidden" role="button" aria-label="Instalar aplicación" onclick="triggerInstall()">
     <div class="install-icon">
         <img src="https://imagedelivery.net/ut8GNCA1obOu4JnXrJ_J9Q/e7b59903-06e0-48f8-1bb1-71bd6da8a800/public" alt="Logo">
@@ -366,7 +499,6 @@
     </button>
 </div>
 
-<!-- LOADER -->
 <div id="global-loader">
     <img src="https://imagedelivery.net/ut8GNCA1obOu4JnXrJ_J9Q/e7b59903-06e0-48f8-1bb1-71bd6da8a800/public"
          alt="Logo" class="w-20 opacity-80 drop-shadow-[0_0_20px_rgba(37,99,235,0.4)]">
@@ -374,7 +506,6 @@
     <p id="loaderText" class="text-[10px] text-slate-600 uppercase tracking-[0.3em] font-bold">Verificando cuenta</p>
 </div>
 
-<!-- LOGIN -->
 <div id="loginSection" class="min-h-screen flex items-center justify-center p-4">
     <div class="w-full max-w-xs text-center space-y-5 anim-fadein">
         <img src="https://imagedelivery.net/ut8GNCA1obOu4JnXrJ_J9Q/e7b59903-06e0-48f8-1bb1-71bd6da8a800/public"
@@ -413,7 +544,6 @@
     </div>
 </div>
 
-<!-- APP -->
 <div id="appSection" class="hidden min-h-screen">
 
     <nav class="px-4 sm:px-6 lg:px-12 py-3 flex justify-between items-center border-b border-white/5 bg-slate-950/80 sticky top-0 z-50 backdrop-blur-md">
@@ -432,10 +562,8 @@
     <main class="max-w-7xl mx-auto p-3 sm:p-5 lg:p-10">
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 lg:gap-12">
 
-            <!-- COLUMNA IZQUIERDA -->
             <div class="lg:col-span-5 space-y-4 sm:space-y-5 lg:sticky lg:top-24 self-start">
 
-                <!-- SALUDO -->
                 <div class="anim-fadein delay-1">
                     <div class="saludo-chip mb-2">
                         <span class="hora-dot"></span>
@@ -447,7 +575,6 @@
                     <p class="text-slate-500 text-xs sm:text-sm mt-1 font-medium" id="motivationalText">Seguís sumando puntos</p>
                 </div>
 
-                <!-- TARJETA 3D -->
                 <div class="card-container anim-fadein delay-2" id="scene">
                     <div class="mx-auto w-full max-w-[360px] sm:max-w-[380px] lg:max-w-full">
                         <div id="card" class="card-premium rounded-[1.6rem] p-4 sm:p-6 aspect-[1.6/1] flex flex-col justify-between">
@@ -467,17 +594,14 @@
                             <div class="relative z-10 flex justify-between items-end border-t border-white/5 pt-2.5 sm:pt-4">
                                 <div>
                                     <h2 id="userName" class="text-[10px] sm:text-xs font-bold tracking-widest text-white uppercase italic text-3d leading-none">Cargando...</h2>
-                                    <!-- VER PIN -->
                                     <div class="pin-row">
                                         <span class="pin-dots" id="pinDots">&#9679; &#9679; &#9679; &#9679;</span>
                                         <span class="pin-value" id="pinValue"></span>
                                         <button class="pin-btn" id="pinBtn" onclick="togglePin()" title="Ver PIN">
-                                            <!-- ojo cerrado -->
                                             <svg id="iconOjoCerrado" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                                 <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
                                                 <line x1="1" y1="1" x2="23" y2="23"/>
                                             </svg>
-                                            <!-- ojo abierto -->
                                             <svg id="iconOjoAbierto" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none">
                                                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
                                                 <circle cx="12" cy="12" r="3"/>
@@ -496,7 +620,6 @@
                     </div>
                 </div>
 
-                <!-- CÓMO FUNCIONA -->
                 <div class="glass rounded-2xl p-4 sm:p-5 anim-fadein delay-3">
                     <h4 class="text-[9px] uppercase tracking-[0.3em] font-black text-slate-500 mb-4">Como funciona</h4>
 
@@ -529,7 +652,6 @@
 
                     <div class="flex gap-3 items-start">
                         <div class="paso-num">
-                            <!-- regalo SVG -->
                             <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                                 <polyline points="20 12 20 22 4 22 4 12"/>
                                 <rect x="2" y="7" width="20" height="5"/>
@@ -547,16 +669,13 @@
 
             </div>
 
-            <!-- COLUMNA DERECHA -->
             <div class="lg:col-span-7 space-y-5 sm:space-y-6">
 
-                <!-- PROGRESO -->
                 <section class="glass p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-white/10 bg-gradient-to-r from-blue-900/10 to-transparent anim-fadein delay-1">
                     <div class="flex justify-between items-start mb-3 sm:mb-4">
                         <div class="flex-1 min-w-0 pr-3">
                             <h3 class="text-sm sm:text-base font-black uppercase italic">Tu próximo premio</h3>
                             <p id="progresoTexto" class="text-slate-400 text-[11px] sm:text-xs mt-1 leading-relaxed"></p>
-                            <!-- Movimientos debajo del progreso -->
                             <div id="movimientosContainer" class="mt-2 hidden">
                                 <div class="movimientos-badge">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -575,8 +694,13 @@
                     </div>
                 </section>
 
-                <!-- PREMIOS -->
                 <section class="anim-fadein delay-2">
+                    <h3 class="text-sm sm:text-base font-black uppercase italic mb-3">Productos que suman puntos</h3>
+                    <div id="ganaPuntosContainer" class="glass rounded-2xl overflow-hidden divide-y divide-white/[0.04]">
+                        </div>
+                </section>
+
+                <section class="anim-fadein delay-3">
                     <h3 class="text-sm sm:text-base font-black uppercase italic mb-3">Canjes disponibles</h3>
                     <div id="premiosContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3"></div>
                 </section>
@@ -586,7 +710,6 @@
     </main>
 </div>
 
-<!-- MODAL ACTIVIDAD -->
 <div id="actividadOverlay" onclick="cerrarActividadOverlay(event)">
     <div id="actividadPanel">
         <div class="drag-handle"></div>
@@ -614,7 +737,178 @@
     </div>
 </div>
 
-<!-- FIREBASE + APP -->
+<div id="comprobanteOverlay" onclick="if(event.target === this) cerrarComprobante()">
+    <div id="comprobantePanel" class="flex flex-col gap-4">
+        <div id="comprobanteCaptura" class="p-8 rounded-[2rem] relative overflow-hidden" style="background: linear-gradient(145deg, #0f172a 0%, #020617 100%); border: 1px solid rgba(255,255,255,0.08);">
+            <div class="absolute -top-20 -right-20 w-56 h-56 bg-blue-600/10 rounded-full blur-[80px] pointer-events-none"></div>
+            
+            <div class="flex items-center justify-center mb-6">
+                <img src="https://imagedelivery.net/ut8GNCA1obOu4JnXrJ_J9Q/e7b59903-06e0-48f8-1bb1-71bd6da8a800/public" crossorigin="anonymous" alt="Logo" class="h-12 sm:h-14 drop-shadow-[0_4px_15px_rgba(37,99,235,0.4)]">
+            </div>
+            
+            <h3 class="text-center text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-6 border-b border-white/10 pb-4">Comprobante de Operación</h3>
+            
+            <div class="space-y-5 relative z-10">
+                <div>
+                    <p class="text-[9px] text-slate-500 uppercase font-black tracking-widest mb-1">Cliente</p>
+                    <p class="text-sm font-bold text-white tracking-wide" id="compNombre"></p>
+                </div>
+                <div>
+                    <p class="text-[9px] text-slate-500 uppercase font-black tracking-widest mb-1">Operación</p>
+                    <p class="text-base font-bold text-white tracking-wide leading-tight" id="compOperacion"></p>
+                </div>
+                <div class="flex justify-between items-center bg-white/[0.02] border border-white/5 rounded-2xl p-4">
+                    <div>
+                        <p class="text-[9px] text-slate-500 uppercase font-black tracking-widest mb-1">Fecha</p>
+                        <p class="text-xs font-bold text-slate-300" id="compFecha"></p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-[9px] text-slate-500 uppercase font-black tracking-widest mb-1">Puntos</p>
+                        <p class="text-3xl font-black" id="compPuntos"></p>
+                    </div>
+                </div>
+                <div class="bg-blue-500/5 border border-blue-500/10 rounded-xl p-3 text-center">
+                    <p class="text-[8px] text-blue-400/60 uppercase font-black tracking-widest mb-0.5">ID de Transacción</p>
+                    <p class="text-xs font-mono font-bold text-blue-300 tracking-[0.1em]" id="compTx"></p>
+                </div>
+            </div>
+            
+            <div class="mt-6 pt-4 border-t border-white/5 text-center">
+                <p class="text-[8px] text-slate-600 uppercase font-bold tracking-widest">Generado desde Más que Burgers App</p>
+            </div>
+        </div>
+
+        <div class="flex flex-col gap-3 w-full">
+            <div id="compMensaje" class="hidden text-center text-xs font-bold bg-slate-900 border border-slate-800 rounded-xl py-2 transition-all"></div>
+            <div class="flex gap-3">
+                <button onclick="cerrarComprobante()" class="flex-1 py-3.5 rounded-2xl font-bold text-[10px] uppercase tracking-widest text-slate-400 bg-white/5 hover:bg-white/10 border border-white/10 transition-all active:scale-95">
+                    Volver
+                </button>
+                <button id="btnCopiarComprobante" onclick="copiarComprobante()" class="flex-[2] py-3.5 rounded-2xl font-bold text-[10px] uppercase tracking-widest text-white bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-900/30 transition-all flex items-center justify-center gap-2 active:scale-95">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/>
+                    </svg>
+                    <span id="btnCopiarComprobanteText">Compartir</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="tycOverlay">
+    <div id="tycPanel">
+
+        <div class="drag-handle"></div>
+
+        <div class="tyc-header">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0"
+                     style="background:rgba(37,99,235,0.1);border:1px solid rgba(37,99,235,0.25)">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24"
+                         fill="none" stroke="#60a5fa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14 2 14 8 20 8"/>
+                        <line x1="16" y1="13" x2="8" y2="13"/>
+                        <line x1="16" y1="17" x2="8" y2="17"/>
+                        <polyline points="10 9 9 9 8 9"/>
+                    </svg>
+                </div>
+                <div>
+                    <h2 class="font-black text-sm text-white tracking-tight">Términos y Condiciones</h2>
+                    <p class="text-[10px] text-slate-500 font-semibold mt-0.5">Sistema de Puntos · Más que Burgers</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="tyc-body" id="tycBody">
+
+            <div class="tyc-section">
+                <p class="tyc-section-title">1. Funcionamiento del programa</p>
+                <ul>
+                    <li>El sistema de puntos está destinado exclusivamente para clientes registrados.</li>
+                    <li>Los puntos acumulados son personales e intransferibles.</li>
+                    <li>Los puntos solo podrán ser acreditados al titular de la cuenta por consumos realizados por el mismo usuario.</li>
+                    <li>Solo se permitirá una carga de puntos por día por cuenta (100 puntos).</li>
+                    <li>La acreditación de puntos puede estar sujeta a validación por parte del comercio.</li>
+                    <li>Los premios y beneficios disponibles pueden variar sin previo aviso.</li>
+                </ul>
+            </div>
+
+            <div class="tyc-section">
+                <p class="tyc-section-title">2. Uso correcto de la cuenta</p>
+                <ul>
+                    <li>Cada usuario es responsable de mantener la confidencialidad de su PIN de acceso.</li>
+                    <li>El comercio no se responsabiliza por accesos realizados por terceros utilizando el PIN del usuario.</li>
+                    <li>Cualquier intento de fraude, duplicación de cargas, manipulación del sistema o uso indebido podrá ocasionar la suspensión de la cuenta y la eliminación de los puntos acumulados.</li>
+                </ul>
+            </div>
+
+            <div class="tyc-section">
+                <p class="tyc-section-title">3. Canje de premios</p>
+                <ul>
+                    <li>Los puntos acumulados podrán utilizarse únicamente para los premios disponibles dentro de la plataforma.</li>
+                    <li>Los puntos no poseen valor monetario y no pueden cambiarse por dinero en efectivo.</li>
+                    <li>El canje de premios está sujeto a disponibilidad.</li>
+                </ul>
+            </div>
+
+            <div class="tyc-section">
+                <p class="tyc-section-title">4. Datos personales</p>
+                <p>Para el funcionamiento del sistema se podrán almacenar los siguientes datos:</p>
+                <ul>
+                    <li>Nombre y apellido</li>
+                    <li>Número de teléfono</li>
+                    <li>Historial de movimientos y puntos acumulados</li>
+                </ul>
+                <p style="margin-top:8px">Estos datos serán utilizados únicamente para identificar al usuario, gestionar la cuenta de puntos, validar movimientos y canjes, y mejorar el funcionamiento del servicio. La información no será vendida ni compartida con terceros ajenos al servicio, salvo obligación legal.</p>
+            </div>
+
+            <div class="tyc-section">
+                <p class="tyc-section-title">5. Inicio de sesión y almacenamiento local</p>
+                <p>La plataforma puede almacenar información de inicio de sesión en el dispositivo del usuario para mantener la sesión iniciada y mejorar la experiencia de uso. Se recomienda no compartir el dispositivo ni el PIN con terceros.</p>
+            </div>
+
+            <div class="tyc-section">
+                <p class="tyc-section-title">6. Modificaciones del sistema</p>
+                <p>Más que Burgers podrá modificar estos términos, el sistema de puntos, premios, requisitos o beneficios en cualquier momento y sin previo aviso.</p>
+            </div>
+
+            <div class="h-4"></div>
+        </div>
+
+        <div class="tyc-footer">
+            <label class="tyc-checkbox-wrap mb-4 select-none" id="tycCheckboxLabel">
+                <div class="tyc-checkbox-box" id="tycCheckboxBox">
+                    <svg class="tyc-check-icon" xmlns="http://www.w3.org/2000/svg" width="10" height="10"
+                         viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="3.5"
+                         stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                </div>
+                <span class="text-[11px] text-slate-400 leading-relaxed font-medium">
+                    Leí y acepto los <span class="text-blue-400 font-bold">Términos y Condiciones</span> del programa de puntos de Más que Burgers.
+                </span>
+            </label>
+
+            <div class="flex gap-2.5">
+                <button onclick="rechazarTyc()"
+                    class="flex-1 py-3 rounded-2xl font-bold text-xs uppercase tracking-wider
+                           text-slate-500 bg-white/[0.03] border border-white/[0.06]
+                           hover:bg-white/[0.06] hover:text-slate-300 transition-all active:scale-95">
+                    No acepto
+                </button>
+                <button id="btnAceptarTyc" onclick="aceptarTyc()" disabled
+                    class="flex-[2] py-3 rounded-2xl font-bold text-xs uppercase tracking-wider
+                           text-white bg-blue-700 hover:bg-blue-600
+                           shadow-lg shadow-blue-900/30 transition-all flex items-center justify-center gap-2">
+                    <span id="btnAceptarTycText">Aceptar y continuar</span>
+                    <div id="btnAceptarTycSpinner" class="btn-spinner hidden"></div>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 <script src="db.js"></script>
@@ -670,6 +964,51 @@
         return abiertos[Math.floor(Math.random() * abiertos.length)];
     }
 
+    /* ── TÉRMINOS Y CONDICIONES ─────────────────────────── */
+    let tycCheckboxActivo = false;
+
+    // Checkbox custom
+    document.getElementById('tycCheckboxLabel').addEventListener('click', () => {
+        tycCheckboxActivo = !tycCheckboxActivo;
+        const box = document.getElementById('tycCheckboxBox');
+        box.classList.toggle('checked', tycCheckboxActivo);
+        document.getElementById('btnAceptarTyc').disabled = !tycCheckboxActivo;
+    });
+
+    function abrirTyc() {
+        document.getElementById('tycOverlay').classList.add('open');
+        document.body.style.overflow = 'hidden';
+    }
+    function cerrarTyc() {
+        document.getElementById('tycOverlay').classList.remove('open');
+        document.body.style.overflow = '';
+    }
+
+    async function aceptarTyc() {
+        if (!tycCheckboxActivo) return;
+        // Spinner
+        document.getElementById('btnAceptarTycText').textContent = '';
+        document.getElementById('btnAceptarTycSpinner').classList.remove('hidden');
+        document.getElementById('btnAceptarTyc').disabled = true;
+
+        await registrarAceptacionTyc(usuarioActual.tarjeta, true, usuarioActual.nombre);
+
+        document.getElementById('btnAceptarTycSpinner').classList.add('hidden');
+        document.getElementById('btnAceptarTycText').textContent = 'Aceptar y continuar';
+        cerrarTyc();
+    }
+
+    async function rechazarTyc() {
+        await registrarAceptacionTyc(usuarioActual.tarjeta, false, usuarioActual.nombre);
+        // Cerrar sesión y volver al login con mensaje
+        cerrarTyc();
+        const loaderText = document.getElementById('loaderText');
+        if (loaderText) loaderText.textContent = 'Cerrando sesión';
+        showLoader();
+        localStorage.removeItem('puntos_user_pin');
+        setTimeout(() => location.reload(), 900);
+    }
+
     /* ACTIVIDAD MODAL */
     function abrirActividad() {
         document.getElementById('actividadOverlay').classList.add('open');
@@ -690,6 +1029,7 @@
         const container = document.getElementById('historialContainer');
         container.innerHTML = '';
         const logs = [...usuarioActual.historial].reverse();
+        window.historialActual = logs; // Guardamos la referencia para el comprobante
 
         // Subtítulo con conteo
         const sub = document.getElementById('actividadSubtitulo');
@@ -714,7 +1054,9 @@
         logs.forEach((h, index) => {
             const esSuma = h.puntos > 0;
             const div = document.createElement('div');
-            div.className = `historial-item flex justify-between items-center px-5 py-4 ${index !== logs.length - 1 ? 'border-b border-white/[0.04]' : ''}`;
+            // Se añaden clases para que sea clickeable
+            div.className = `historial-item flex justify-between items-center px-5 py-4 ${index !== logs.length - 1 ? 'border-b border-white/[0.04]' : ''} cursor-pointer hover:bg-white/[0.06] transition-colors active:scale-[0.98]`;
+            div.setAttribute('onclick', `abrirComprobante(${index})`);
             div.innerHTML = `
                 <div class="flex items-center gap-3.5">
                     <div class="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${esSuma ? 'bg-emerald-500/10' : 'bg-rose-500/10'}">
@@ -744,7 +1086,8 @@
             return;
         }
         premios.forEach(p => {
-            const puede = usuarioActual.puntos >= p.puntos;
+            const costoCanje = p.puntosCanje ?? p.puntos ?? 0;
+            const puede = usuarioActual.puntos >= costoCanje;
             const tieneImagen = p.imagen && p.imagen.trim() !== '';
             const fallbackSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#334155" stroke-width="1.8"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>`;
             const div = document.createElement('div');
@@ -760,7 +1103,7 @@
                     </div>
                 </div>
                 <div class="flex items-center justify-between border-t border-white/5 pt-2.5">
-                    <span class="text-blue-400 font-black tracking-tighter text-sm">${p.puntos} PTS</span>
+                    <span class="text-blue-400 font-black tracking-tighter text-sm">${costoCanje} PTS</span>
                     <button disabled class="px-3 sm:px-4 py-1.5 rounded-xl font-bold text-[9px] sm:text-[10px] uppercase ${puede ? 'bg-blue-600 shadow-lg shadow-blue-600/20 text-white' : 'bg-slate-800 text-slate-500 opacity-40 cursor-not-allowed'}">
                         ${puede ? 'Canjear' : 'Faltan pts'}
                     </button>
@@ -786,12 +1129,57 @@
             usuarioActual.puntos >= 3000 ? 'Sos de los mejores clientes'     : sal.motiv;
 
         renderProgreso();
+        renderGanaPuntos();
         renderPremios();
         renderHistorial();
     };
 
+    /* renderGanaPuntos — lista los productos que suman puntos al comprar */
+    window.renderGanaPuntos = function() {
+        const container = document.getElementById('ganaPuntosContainer');
+        if (!container) return;
+
+        // Productos de carga: aparece === 'carga' o 'ambos'
+        const cargables = productos
+            .filter(p => p.aparece === 'carga' || p.aparece === 'ambos' || (p.aparece === undefined && p.canjeable === false))
+            .sort((a, b) => (b.puntosCargar ?? b.puntos ?? 0) - (a.puntosCargar ?? a.puntos ?? 0));
+
+        if (cargables.length === 0) {
+            container.innerHTML = `
+                <div class="p-6 text-center text-slate-600 text-xs italic font-bold">
+                    Próximamente vas a ver acá cuánto suma cada producto.
+                </div>`;
+            return;
+        }
+
+        container.innerHTML = cargables.map((p, index) => {
+            const pts = p.puntosCargar ?? p.puntos ?? 0;
+            const tieneImagen = p.imagen && p.imagen.trim() !== '';
+            const fallbackSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#334155" stroke-width="1.8"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>`;
+            return `
+                <div class="flex items-center gap-3 px-4 py-3 hover:bg-white/[0.03] transition-colors">
+                    <div class="w-9 h-9 flex-shrink-0 overflow-hidden rounded-xl border border-white/10 bg-slate-800 flex items-center justify-center">
+                        ${tieneImagen
+                            ? `<img src="${p.imagen}" alt="${p.nombre}" class="w-full h-full object-cover" onerror="imgFallback(this)">`
+                            : fallbackSVG
+                        }
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-xs font-bold text-white leading-tight truncate">${p.nombre}</p>
+                        <p class="text-[9px] text-slate-500 uppercase font-semibold mt-0.5">${p.categoria || ''}</p>
+                    </div>
+                    <div class="flex-shrink-0 flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-2.5 py-1.5">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/>
+                        </svg>
+                        <span class="text-emerald-400 font-black text-xs tabular-nums">+${pts}</span>
+                        <span class="text-emerald-600 font-bold text-[9px] uppercase">pts</span>
+                    </div>
+                </div>`;
+        }).join('');
+    };
+
 </script>
-<!-- SERVICE WORKER + LÓGICA DE INSTALACIÓN PWA -->
 <script>
     // Registro del Service Worker
     if ('serviceWorker' in navigator) {
