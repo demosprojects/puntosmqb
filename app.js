@@ -57,10 +57,10 @@ window.onload = async () => {
         await initDB();
         await initProductos();
 
-        // Premios = productos canjeables, ordenados por puntos asc
+        // Premios = solo productos que se pueden canjear, ordenados por costo de canje asc
         premios = productos
-            .filter(p => p.canjeable !== false)
-            .sort((a, b) => a.puntos - b.puntos);
+            .filter(p => p.aparece === 'canje' || p.aparece === 'ambos' || (p.aparece === undefined && p.canjeable !== false))
+            .sort((a, b) => (a.puntosCanje ?? a.puntos ?? 0) - (b.puntosCanje ?? b.puntos ?? 0));
         
         // Buscamos si ya hay un PIN guardado de una sesión anterior
         const pinGuardado = localStorage.getItem('puntos_user_pin');
@@ -107,6 +107,12 @@ async function iniciarConPin(pin) {
         document.getElementById("appSection").classList.remove("hidden");
         
         renderAll();
+
+        // Verificar si ya aceptó los TyC; si no, mostrar el modal
+        const tyc = await getTycStatus(user.tarjeta);
+        if (!tyc || !tyc.aceptado) {
+            if (typeof abrirTyc === 'function') abrirTyc();
+        }
     } else {
         showInlineMessage("El PIN ingresado es incorrecto o no existe.", "error");
     }
@@ -135,8 +141,9 @@ function renderAll() {
 }
 
 function renderProgreso() {
-    const proximo = premios.find(p => p.puntos > usuarioActual.puntos) || premios[premios.length - 1];
-    const objetivo = proximo.puntos;
+    const costoProximo = p => p.puntosCanje ?? p.puntos ?? 0;
+    const proximo = premios.find(p => costoProximo(p) > usuarioActual.puntos) || premios[premios.length - 1];
+    const objetivo = costoProximo(proximo);
     const faltan = Math.max(objetivo - usuarioActual.puntos, 0);
     const porcentaje = Math.min((usuarioActual.puntos / objetivo) * 100, 100);
 
@@ -161,7 +168,8 @@ function renderPremios() {
     }
 
     premios.forEach(p => {
-        const puede = usuarioActual.puntos >= p.puntos;
+        const costoCanje = p.puntosCanje ?? p.puntos ?? 0;
+        const puede = usuarioActual.puntos >= costoCanje;
         const tieneImagen = p.imagen && p.imagen.trim() !== '';
         container.innerHTML += `
             <div class="glass p-6 rounded-3xl flex flex-col justify-between gap-6 transition-all hover:bg-white/[0.05]">
@@ -178,7 +186,7 @@ function renderPremios() {
                     </div>
                 </div>
                 <div class="flex items-center justify-between border-t border-white/5 pt-4">
-                    <span class="text-blue-400 font-black tracking-tighter text-lg">${p.puntos} PTS</span>
+                    <span class="text-blue-400 font-black tracking-tighter text-lg">${costoCanje} PTS</span>
                     <button disabled
                         class="px-6 py-2 rounded-xl font-bold text-xs uppercase transition-all ${
                         puede
@@ -198,11 +206,12 @@ function renderHistorial() {
     container.innerHTML = "";
 
     const logs = [...usuarioActual.historial].reverse().slice(0, 5);
+    window.historialActual = logs; // Guardamos la referencia para el comprobante
 
     logs.forEach((h, index) => {
         const esSuma = h.puntos > 0;
         container.innerHTML += `
-            <div class="flex justify-between items-center p-5 ${index !== logs.length - 1 ? 'border-b border-white/5' : ''}">
+            <div onclick="abrirComprobante(${index})" class="flex justify-between items-center p-5 ${index !== logs.length - 1 ? 'border-b border-white/5' : ''} cursor-pointer hover:bg-white/[0.04] transition-colors active:scale-[0.98]">
                 <div class="flex items-center gap-4">
                     <div class="w-10 h-10 rounded-full flex items-center justify-center ${esSuma ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'}">
                         ${esSuma ? '↑' : '↓'}
@@ -218,4 +227,95 @@ function renderHistorial() {
             </div>
         `;
     });
+}
+
+// ── SISTEMA DE COMPROBANTES ─────────────────────────────────
+
+function abrirComprobante(index) {
+    if (!window.historialActual || !window.historialActual[index]) return;
+    const h = window.historialActual[index];
+    const esSuma = h.puntos > 0;
+    
+    // Rellenamos los datos del modal
+    document.getElementById('compNombre').innerText = usuarioActual.nombre;
+    document.getElementById('compOperacion').innerText = h.descripcion;
+    document.getElementById('compFecha').innerText = h.fecha;
+    document.getElementById('compPuntos').innerText = (esSuma ? '+' : '') + h.puntos;
+    document.getElementById('compPuntos').className = `text-3xl font-black ${esSuma ? 'text-emerald-400' : 'text-rose-400'}`;
+    
+    // Si el historial viejo no tiene idTx generado, mostramos uno temporal para que no quede en blanco
+    document.getElementById('compTx').innerText = h.idTx || 'MQB-' + Math.random().toString(36).substr(2, 6).toUpperCase();
+    
+    // Ocultamos mensajes anteriores
+    document.getElementById('compMensaje').classList.add('hidden');
+    
+    document.getElementById('comprobanteOverlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+}
+
+function cerrarComprobante() {
+    document.getElementById('comprobanteOverlay').classList.remove('open');
+    // Solo restauramos el scroll si la pestaña de "Actividad" no sigue abierta de fondo
+    if (!document.getElementById('actividadOverlay').classList.contains('open')) {
+        document.body.style.overflow = '';
+    }
+}
+
+async function copiarComprobante() {
+    const btn = document.getElementById('btnCopiarComprobante');
+    const textSpan = document.getElementById('btnCopiarComprobanteText');
+    const originalText = textSpan.innerText;
+    const msgDiv = document.getElementById('compMensaje');
+    
+    textSpan.innerText = 'Generando...';
+    btn.disabled = true;
+    msgDiv.classList.add('hidden');
+
+    try {
+        const captureDiv = document.getElementById('comprobanteCaptura');
+        const canvas = await html2canvas(captureDiv, {
+            backgroundColor: '#0f172a', // Color de fondo base para que no quede transparente
+            scale: 3, // Alta calidad
+            useCORS: true // Para que pueda procesar la imagen del logo
+        });
+        
+        canvas.toBlob(async (blob) => {
+            try {
+                // Si el dispositivo/navegador soporta la API Share nativa (WhatsApp, Mail, etc)
+                if (navigator.share && navigator.canShare && navigator.canShare({ files: [new File([blob], 'comprobante.png', { type: 'image/png' })] })) {
+                    const file = new File([blob], 'comprobante.png', { type: 'image/png' });
+                    await navigator.share({
+                        title: 'Comprobante Más que Burgers',
+                        files: [file]
+                    });
+                    msgDiv.innerHTML = '<span class="text-emerald-400">¡Compartido con éxito!</span>';
+                } else {
+                    // Fallback para PC o navegadores donde se copia directo al portapapeles
+                    const item = new ClipboardItem({ "image/png": blob });
+                    await navigator.clipboard.write([item]);
+                    msgDiv.innerHTML = '<span class="text-emerald-400">¡Imagen copiada al portapapeles!</span>';
+                }
+            } catch (err) {
+                console.error('Error al compartir/copiar:', err);
+                if (err.name !== 'AbortError') { // Ignora si el usuario canceló el menú nativo de compartir
+                    msgDiv.innerHTML = '<span class="text-rose-400">No se pudo compartir. Tu dispositivo no lo soporta.</span>';
+                }
+            } finally {
+                if(msgDiv.innerHTML !== '') msgDiv.classList.remove('hidden');
+                textSpan.innerText = '¡Listo!';
+                setTimeout(() => {
+                    textSpan.innerText = originalText;
+                    btn.disabled = false;
+                    setTimeout(() => msgDiv.classList.add('hidden'), 2000);
+                }, 2500);
+            }
+        }, 'image/png');
+    } catch (error) {
+        console.error('Error html2canvas:', error);
+        msgDiv.innerHTML = '<span class="text-rose-400">Error al generar la imagen.</span>';
+        msgDiv.classList.remove('hidden');
+        textSpan.innerText = originalText;
+        btn.disabled = false;
+        setTimeout(() => msgDiv.classList.add('hidden'), 3000);
+    }
 }
