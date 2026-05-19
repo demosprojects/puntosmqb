@@ -77,6 +77,7 @@
             <button onclick="switchTab('stock')" id="btn-tab-stock" class="text-xs font-bold uppercase tracking-widest text-slate-500 pb-1">Tarjetas</button>
             <button onclick="switchTab('productos')" id="btn-tab-productos" class="text-xs font-bold uppercase tracking-widest text-slate-500 pb-1">Productos</button>
             <button onclick="switchTab('tyc')" id="btn-tab-tyc" class="text-xs font-bold uppercase tracking-widest text-slate-500 pb-1">TyC</button>
+            <button onclick="switchTab('ads')" id="btn-tab-ads" class="text-xs font-bold uppercase tracking-widest text-slate-500 pb-1">ADS</button>
             <div class="h-4 w-px bg-white/10"></div>
             <button onclick="cerrarSesion()" title="Cerrar sesión"
                 class="flex items-center gap-2 text-slate-500 hover:text-rose-400 transition-colors text-[10px] font-bold uppercase tracking-widest group">
@@ -96,7 +97,7 @@
                 <div id="buscarPanel" class="glass p-8 rounded-[2rem] space-y-6 border-blue-500/20">
                     <div>
                         <h2 class="text-lg font-bold uppercase italic mb-2 text-blue-400">Buscar Tarjeta</h2>
-                        <p class="text-xs text-slate-500 font-medium">Ingresá el número de la tarjeta física</p>
+                        <p class="text-xs text-slate-500 font-medium">Ingresá el número de tarjeta</p>
                     </div>
                     <div class="space-y-4">
                         <input id="buscarTarjeta" type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="9" placeholder="0000 0000" onkeydown="if(event.key==='Enter') buscarCliente()" oninput="this.value=this.value.replace(/[^0-9]/g,'')" class="w-full p-4 rounded-xl bg-slate-900 border border-slate-800 text-center text-2xl font-bold tracking-[0.2em] outline-none focus:border-blue-600 transition-all text-white">
@@ -547,6 +548,151 @@
         </div>
     </div>
 
+
+    <!-- ══ SECCIÓN ADS ══════════════════════════════════════════════ -->
+    <div id="section-ads" class="hidden space-y-6 animate-in fade-in duration-500" style="display:none !important">
+
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+                <h2 class="text-2xl font-black italic uppercase">Publicidad</h2>
+                <p class="text-xs text-slate-500 mt-1 font-medium">Gestioná el banner de anuncio.</p>
+            </div>
+            <div class="flex items-center gap-3">
+                <!-- Toggle activo/inactivo -->
+                <div class="flex items-center gap-3 glass px-4 py-2.5 rounded-xl border border-white/10">
+                    <span class="text-[10px] font-black uppercase tracking-widest text-slate-400">Banner</span>
+                    <button id="adToggleBtn" onclick="toggleAdActivo()" class="relative w-11 h-6 rounded-full transition-colors duration-300 bg-slate-800 border border-white/10 focus:outline-none flex-shrink-0">
+                        <span id="adToggleThumb" class="absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-slate-600 transition-all duration-300 shadow-sm"></span>
+                    </button>
+                    <span id="adToggleLabel" class="text-[10px] font-black uppercase tracking-widest text-slate-600">Inactivo</span>
+                </div>
+                <button onclick="guardarAd()" id="btnGuardarAd"
+                    class="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-blue-900/20">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><polyline points="17 21 17 13 7 13 7 21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><polyline points="7 3 7 8 15 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    <span id="btnGuardarAdText">Guardar</span>
+                    <div id="btnGuardarAdSpinner" class="btn-spinner hidden"></div>
+                </button>
+            </div>
+        </div>
+
+        <!-- Layout: dos columnas en desktop, formulario izquierda, preview derecha -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+            <!-- Formulario — columna izquierda -->
+            <div class="lg:col-span-5 space-y-5">
+                <div class="glass p-8 rounded-[2rem] border border-white/10 space-y-5">
+                    <p class="text-[10px] uppercase font-black text-slate-500 tracking-widest">Configuración del banner</p>
+
+                    <div class="space-y-1">
+                        <label class="text-[10px] uppercase font-bold text-slate-500 ml-1">Etiqueta / Chip <span class="text-slate-600">(ej: "Promo activa")</span></label>
+                        <input id="adTag" type="text" maxlength="24" placeholder="Promo activa"
+                            oninput="actualizarPreviewAd()"
+                            class="w-full p-3.5 rounded-xl bg-slate-900 border border-slate-800 outline-none focus:border-blue-500 text-white text-sm font-bold transition-all placeholder:text-slate-700">
+                    </div>
+
+                    <div class="space-y-1">
+                        <label class="text-[10px] uppercase font-bold text-slate-500 ml-1">Título principal *</label>
+                        <input id="adTitulo" type="text" maxlength="60" placeholder="Ej: Combo Doble + papas grandes"
+                            oninput="actualizarPreviewAd()"
+                            class="w-full p-3.5 rounded-xl bg-slate-900 border border-slate-800 outline-none focus:border-blue-500 text-white text-sm font-bold transition-all placeholder:text-slate-700">
+                    </div>
+
+                    <div class="space-y-1">
+                        <label class="text-[10px] uppercase font-bold text-slate-500 ml-1">Subtítulo <span class="text-slate-600">(descripción breve)</span></label>
+                        <textarea id="adSubtitulo" maxlength="100" rows="2" placeholder="Ej: Esta semana sumás el doble en todos los combos"
+                            oninput="actualizarPreviewAd()"
+                            class="w-full p-3.5 rounded-xl bg-slate-900 border border-slate-800 outline-none focus:border-blue-500 text-white text-sm transition-all resize-none placeholder:text-slate-700"></textarea>
+                    </div>
+
+                    <div class="space-y-1">
+                        <label class="text-[10px] uppercase font-bold text-slate-500 ml-1">URL de imagen del flyer *</label>
+                        <input id="adImagen" type="url" placeholder="https://… (jpg, webp, png)"
+                            oninput="actualizarPreviewAd()"
+                            class="w-full p-3.5 rounded-xl bg-slate-900 border border-slate-800 outline-none focus:border-blue-500 text-white text-sm transition-all placeholder:text-slate-700">
+                        <p class="text-[10px] text-slate-600 ml-1 italic">Pegá la URL directa de la imagen. Proporción recomendada: 1:1 o 4:3.</p>
+                    </div>
+
+                    <!-- Estado guardado -->
+                    <div id="adStatusMsg" class="hidden p-3 rounded-xl text-xs font-bold text-center transition-all"></div>
+                </div>
+            </div>
+
+            <!-- Vista previa + estado — columna derecha -->
+            <div class="lg:col-span-7 space-y-5">
+                <div class="space-y-4">
+                    <p class="text-[10px] uppercase font-black text-slate-500 tracking-widest px-1">Vista previa — tal como lo ve el cliente</p>
+
+                    <!-- Contexto: simulación de la app -->
+                    <div class="glass rounded-[2rem] border border-white/10 p-6 space-y-4">
+                        <!-- Label sección simulada -->
+                        <div class="flex items-center justify-between">
+                            <p class="text-[9px] uppercase font-black text-slate-600 tracking-widest">Productos que suman puntos</p>
+                            <div class="h-px flex-1 mx-3" style="background:linear-gradient(90deg,rgba(255,255,255,0.04),transparent)"></div>
+                        </div>
+
+                        <!-- Preview del banner (replica exacta del CSS de index.html) -->
+                        <div id="adPreviewWrap" class="relative overflow-hidden rounded-[1.25rem] border border-white/[0.07] flex items-stretch min-h-[88px] transition-all"
+                            style="background:rgba(255,255,255,0.025);backdrop-filter:blur(16px);">
+                            <!-- Línea superior decorativa -->
+                            <div class="absolute top-0 left-0 right-0 h-px" style="background:linear-gradient(90deg,transparent,rgba(37,99,235,0.5),rgba(16,185,129,0.3),transparent);z-index:1;"></div>
+                            <!-- Glow -->
+                            <div class="absolute -top-10 -right-8 w-36 h-36 rounded-full pointer-events-none" style="background:radial-gradient(circle,rgba(37,99,235,0.08) 0%,transparent 70%);"></div>
+
+                            <!-- Imagen -->
+                            <div id="adPreviewImgWrap" class="flex-shrink-0 overflow-hidden rounded-[1.1rem_0_0_1.1rem] bg-slate-900 flex items-center justify-center" style="width:88px;min-height:88px;">
+                                <img id="adPreviewImg" src="" alt="" class="hidden w-full h-full object-cover">
+                                <svg id="adPreviewImgPlaceholder" width="28" height="28" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" stroke="#1e293b" stroke-width="1.5"/><circle cx="8.5" cy="8.5" r="1.5" fill="#1e293b"/><path d="M21 15l-5-5L5 21" stroke="#1e293b" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            </div>
+
+                            <!-- Divider -->
+                            <div class="flex-shrink-0 w-px" style="background:linear-gradient(to bottom,transparent,rgba(255,255,255,0.08) 20%,rgba(255,255,255,0.08) 80%,transparent);"></div>
+
+                            <!-- Contenido -->
+                            <div class="flex-1 min-w-0 flex flex-col justify-center gap-1.5 p-4 relative z-10">
+                                <!-- Chip -->
+                                <div class="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 w-fit" style="background:rgba(37,99,235,0.10);border:1px solid rgba(37,99,235,0.22);">
+                                    <span class="w-1.5 h-1.5 rounded-full flex-shrink-0 animate-pulse" style="background:#2563eb;box-shadow:0 0 6px rgba(37,99,235,0.8);"></span>
+                                    <span id="adPreviewTag" class="text-[8.5px] font-black uppercase tracking-[0.12em] text-blue-400">Promo activa</span>
+                                </div>
+                                <!-- Título -->
+                                <p id="adPreviewTitulo" class="text-xs font-black text-slate-100 leading-snug">Tu título aparecerá acá</p>
+                                <!-- Subtítulo -->
+                                <p id="adPreviewSub" class="text-[10px] text-slate-500 font-semibold leading-relaxed hidden"></p>
+                            </div>
+                        </div>
+
+                        <!-- Etiqueta abajo de la preview -->
+                        <p class="text-[9px] text-slate-700 font-semibold italic text-center">↑ Así aparece en la app del cliente</p>
+                    </div>
+
+                    <!-- Info de estado en Firebase -->
+                    <div id="adEstadoActual" class="glass rounded-2xl p-5 border border-white/10 space-y-3">
+                        <p class="text-[10px] uppercase font-black text-slate-500 tracking-widest">Estado guardado en Firebase</p>
+                        <div class="grid grid-cols-2 gap-x-6 gap-y-2" id="adEstadoLista">
+                            <div class="flex flex-col gap-0.5 py-1 border-b border-white/5">
+                                <span class="text-[9px] text-slate-600 font-bold uppercase tracking-widest">Activo</span>
+                                <span id="adEstActivo" class="text-xs font-black">—</span>
+                            </div>
+                            <div class="flex flex-col gap-0.5 py-1 border-b border-white/5">
+                                <span class="text-[9px] text-slate-600 font-bold uppercase tracking-widest">Tag</span>
+                                <span id="adEstTag" class="text-xs font-black text-blue-400">—</span>
+                            </div>
+                            <div class="flex flex-col gap-0.5 py-1 border-b border-white/5 col-span-2">
+                                <span class="text-[9px] text-slate-600 font-bold uppercase tracking-widest">Título</span>
+                                <span id="adEstTitulo" class="text-xs font-black text-white truncate">—</span>
+                            </div>
+                            <div class="flex flex-col gap-0.5 py-1 col-span-2">
+                                <span class="text-[9px] text-slate-600 font-bold uppercase tracking-widest">Imagen</span>
+                                <span id="adEstImagen" class="text-[10px] font-bold text-slate-400 truncate">—</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div><!-- /grid cols -->
+
+    </div><!-- /section-ads -->
     </main>
 
     <!-- ══ MODAL SELECTOR DE PRODUCTOS ══════════════════════════════ -->
@@ -776,6 +922,9 @@
             </div>
         </div>
     </div>
+
+
+    <!-- ══════════════════════════════════════════════════════ -->
 
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
