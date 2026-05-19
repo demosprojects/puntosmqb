@@ -154,28 +154,61 @@
         .delay-2 { animation-delay: 0.14s; }
         .delay-3 { animation-delay: 0.21s; }
 
-        /* SALUDO CHIP */
-        .saludo-chip {
-            display: inline-flex; align-items: center; gap: 8px;
-            background: rgba(255,255,255,0.04);
-            border: 1px solid rgba(255,255,255,0.07);
-            border-radius: 999px;
-            padding: 6px 16px;
-            font-size: 14px; font-weight: 700; color: #94a3b8;
+        /* SALUDO BANNER */
+        .saludo-banner {
+            position: relative;
+            overflow: hidden;
+            border-radius: 1.5rem;
+            padding: 1.1rem 1.25rem 1rem;
+            background: linear-gradient(135deg, rgba(37,99,235,0.13) 0%, rgba(16,185,129,0.06) 100%);
+            border: 1px solid rgba(37,99,235,0.18);
+            display: flex; flex-direction: column; gap: 4px;
         }
-        @media (min-width: 640px) {
-            .saludo-chip {
-                font-size: 18px;
-                padding: 8px 20px;
-                gap: 10px;
-            }
-            .hora-dot { width: 8px; height: 8px; }
+        .saludo-banner::before {
+            content: '';
+            position: absolute; top: 0; left: 0; right: 0; height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(37,99,235,0.6), rgba(16,185,129,0.4), transparent);
+        }
+        .saludo-banner::after {
+            content: '';
+            position: absolute; top: -60px; right: -40px;
+            width: 160px; height: 160px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(37,99,235,0.12) 0%, transparent 70%);
+            pointer-events: none;
+        }
+        .saludo-tag {
+            display: inline-flex; align-items: center; gap: 6px;
+            background: rgba(16,185,129,0.08);
+            border: 1px solid rgba(16,185,129,0.18);
+            border-radius: 999px;
+            padding: 3px 10px 3px 7px;
+            width: fit-content;
         }
         .hora-dot {
             width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
             background: var(--emerald);
             box-shadow: 0 0 7px rgba(16,185,129,0.7);
             display: inline-block;
+            animation: pulse-dot 2.5s ease-in-out infinite;
+        }
+        @keyframes pulse-dot {
+            0%, 100% { box-shadow: 0 0 5px rgba(16,185,129,0.6); }
+            50%       { box-shadow: 0 0 12px rgba(16,185,129,1); }
+        }
+        .saludo-motiv {
+            font-size: 10.5px; color: #64748b; font-weight: 600;
+            display: flex; align-items: center; gap: 5px;
+        }
+        .saludo-motiv::before {
+            content: '';
+            display: inline-block; width: 16px; height: 1px;
+            background: linear-gradient(90deg, rgba(37,99,235,0.5), transparent);
+            flex-shrink: 0;
+        }
+        @media (min-width: 640px) {
+            .saludo-banner { padding: 1.25rem 1.5rem; border-radius: 1.75rem; }
+            .hora-dot { width: 7px; height: 7px; }
         }
 
         /* MOVIMIENTOS BADGE */
@@ -301,11 +334,27 @@
         }
 
         .drag-handle {
-            width: 36px; height: 4px; border-radius: 99px;
-            background: rgba(255,255,255,0.1);
-            margin: 14px auto 0; flex-shrink: 0;
+            /* Zona táctil generosa */
+            width: 100%; height: 28px;
+            flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            cursor: grab;
+            touch-action: none;
+            margin-top: 4px;
         }
+        .drag-handle::after {
+            content: '';
+            display: block;
+            width: 40px; height: 4px;
+            border-radius: 99px;
+            background: rgba(255,255,255,0.22);
+        }
+        .drag-handle:active { cursor: grabbing; }
         @media (min-width: 640px) { .drag-handle { display: none; } }
+
+        /* X solo visible en desktop */
+        .btn-cerrar-modal { display: none !important; }
+        @media (min-width: 640px) { .btn-cerrar-modal { display: flex !important; } }
 
         .actividad-header {
             display: flex; align-items: center; justify-content: space-between;
@@ -453,6 +502,112 @@
         #btnAceptarTyc:disabled { opacity: 0.35; cursor: not-allowed; }
         #btnAceptarTyc:not(:disabled):active { transform: scale(0.97); }
 
+        /* BANNER PUBLICITARIO */
+        .ad-banner {
+            position: relative;
+            overflow: hidden;
+            border-radius: 1.25rem;
+            border: 1px solid rgba(255,255,255,0.07);
+            background: rgba(255,255,255,0.025);
+            backdrop-filter: blur(16px);
+            display: flex;
+            align-items: stretch;
+            gap: 0;
+            min-height: 88px;
+            transition: border-color 0.25s, background 0.25s;
+            cursor: default;
+        }
+        .ad-banner:hover {
+            border-color: rgba(255,255,255,0.12);
+            background: rgba(255,255,255,0.04);
+        }
+        /* Línea superior decorativa (igual que saludo-banner) */
+        .ad-banner::before {
+            content: '';
+            position: absolute; top: 0; left: 0; right: 0; height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(37,99,235,0.5), rgba(16,185,129,0.3), transparent);
+            z-index: 1;
+        }
+        /* Glow de fondo sutil */
+        .ad-banner::after {
+            content: '';
+            position: absolute; top: -40px; right: -30px;
+            width: 140px; height: 140px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(37,99,235,0.08) 0%, transparent 70%);
+            pointer-events: none;
+        }
+        .ad-banner-img-wrap {
+            flex-shrink: 0;
+            width: 88px;
+            min-height: 88px;
+            position: relative;
+            overflow: hidden;
+            border-radius: 1.15rem 0 0 1.15rem;
+            background: #0d0d18;
+        }
+        @media (min-width: 640px) {
+            .ad-banner-img-wrap { width: 108px; }
+        }
+        .ad-banner-img-wrap img {
+            width: 100%; height: 100%;
+            object-fit: cover;
+            display: block;
+            transition: transform 0.4s ease;
+        }
+        .ad-banner:hover .ad-banner-img-wrap img { transform: scale(1.04); }
+        /* Separador vertical con gradiente */
+        .ad-banner-divider {
+            width: 1px;
+            flex-shrink: 0;
+            background: linear-gradient(to bottom, transparent, rgba(255,255,255,0.08) 20%, rgba(255,255,255,0.08) 80%, transparent);
+        }
+        .ad-banner-content {
+            flex: 1;
+            min-width: 0;
+            padding: 14px 14px 14px 16px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 6px;
+            position: relative;
+            z-index: 1;
+        }
+        @media (min-width: 640px) {
+            .ad-banner-content { padding: 16px 18px 16px 18px; gap: 7px; }
+        }
+        .ad-banner-tag {
+            display: inline-flex; align-items: center; gap: 5px;
+            background: rgba(37,99,235,0.10);
+            border: 1px solid rgba(37,99,235,0.22);
+            border-radius: 999px;
+            padding: 2px 8px 2px 6px;
+            width: fit-content;
+        }
+        .ad-banner-tag-dot {
+            width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0;
+            background: var(--blue);
+            box-shadow: 0 0 6px rgba(37,99,235,0.8);
+            animation: pulse-dot 2.5s ease-in-out infinite;
+        }
+        .ad-banner-tag-text {
+            font-size: 8.5px; font-weight: 800; letter-spacing: 0.12em;
+            text-transform: uppercase; color: #60a5fa;
+        }
+        .ad-banner-title {
+            font-size: 12px; font-weight: 800;
+            color: #f1f5f9; line-height: 1.35;
+        }
+        @media (min-width: 640px) {
+            .ad-banner-title { font-size: 13px; }
+        }
+        .ad-banner-sub {
+            font-size: 10px; color: #64748b; font-weight: 600; line-height: 1.5;
+        }
+        @media (min-width: 640px) {
+            .ad-banner-sub { font-size: 10.5px; }
+        }
+
         /* BOTÓN NAV ACTIVIDAD */
         .btn-actividad {
             display: flex; align-items: center; gap: 5px;
@@ -565,14 +720,21 @@
             <div class="lg:col-span-5 space-y-4 sm:space-y-5 lg:sticky lg:top-24 self-start">
 
                 <div class="anim-fadein delay-1">
-                    <div class="saludo-chip mb-2">
-                        <span class="hora-dot"></span>
-                        <span id="saludoTexto">Buenas tardes</span>
+                    <div class="saludo-banner">
+                        <!-- Tag horario -->
+                        <div class="saludo-tag">
+                            <span class="hora-dot"></span>
+                            <span id="saludoTexto" class="text-[10px] font-black uppercase tracking-wider text-emerald-400">Buenas tardes</span>
+                        </div>
+
+                        <!-- Nombre -->
+                        <h1 class="text-2xl sm:text-3xl font-black tracking-tight leading-tight text-white mt-1">
+                            ¡Hola, <span id="userNameGreet" class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400">...</span>!
+                        </h1>
+
+                        <!-- Motivacional -->
+                        <p class="saludo-motiv" id="motivationalText">Seguís sumando puntos</p>
                     </div>
-                    <h1 class="text-2xl sm:text-3xl font-black tracking-tight leading-tight text-white">
-                        ¡Hola, <span id="userNameGreet" class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400">...</span>!
-                    </h1>
-                    <p class="text-slate-500 text-xs sm:text-sm mt-1 font-medium" id="motivationalText">Seguís sumando puntos</p>
                 </div>
 
                 <div class="card-container anim-fadein delay-2" id="scene">
@@ -627,7 +789,7 @@
                         <div class="paso-num">1</div>
                         <div class="pt-0.5">
                             <p class="text-xs font-bold text-white">Pedí en caja</p>
-                            <p class="text-[10px] text-slate-500 mt-0.5 leading-relaxed">Cada compra suma puntos. Pedíselo al cajero.</p>
+                            <p class="text-[10px] text-slate-500 mt-0.5 leading-relaxed">Elegí un producto que sume y pedile al cajero que te sume tus puntos.</p>
                         </div>
                     </div>
                     <div class="paso-conector"></div>
@@ -698,6 +860,22 @@
                     <h3 class="text-sm sm:text-base font-black uppercase italic mb-3">Productos que suman puntos</h3>
                     <div id="ganaPuntosContainer" class="glass rounded-2xl overflow-hidden divide-y divide-white/[0.04]">
                         </div>
+
+                    <!-- BANNER PUBLICITARIO -->
+                    <div id="adBanner" class="ad-banner mt-3" style="display:none">
+                        <div class="ad-banner-img-wrap">
+                            <img id="adBannerImg" src="" alt="Promoción">
+                        </div>
+                        <div class="ad-banner-divider"></div>
+                        <div class="ad-banner-content">
+                            <div class="ad-banner-tag">
+                                <span class="ad-banner-tag-dot"></span>
+                                <span id="adBannerTag" class="ad-banner-tag-text">Promo activa</span>
+                            </div>
+                            <p id="adBannerTitle" class="ad-banner-title"></p>
+                            <p id="adBannerSub" class="ad-banner-sub"></p>
+                        </div>
+                    </div>
                 </section>
 
                 <section class="anim-fadein delay-3">
@@ -708,6 +886,97 @@
             </div>
         </div>
     </main>
+
+    <!-- ── FOOTER ──────────────────────────────────────────── -->
+    <footer class="mt-8 border-t border-white/[0.05] px-4 py-8 sm:px-6 lg:px-12">
+        <div class="max-w-7xl mx-auto">
+
+            <!-- Aclaraciones importantes -->
+            <div class="mb-6 p-4 sm:p-5 rounded-2xl bg-amber-500/[0.06] border border-amber-500/[0.15]">
+                <div class="flex gap-3 items-start">
+                    <div class="flex-shrink-0 mt-0.5">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                            <line x1="12" y1="9" x2="12" y2="13"/>
+                            <line x1="12" y1="17" x2="12.01" y2="17"/>
+                        </svg>
+                    </div>
+                    <div class="min-w-0">
+                        <p class="text-[11px] font-black uppercase tracking-wider text-amber-400 mb-2">Aclaraciones importantes</p>
+                        <ul class="space-y-1.5">
+                            <li class="text-[11px] text-slate-400 leading-relaxed flex gap-2">
+                                <span class="text-amber-500/60 flex-shrink-0">•</span>
+                                <span>Los puntos <b class="text-slate-300">no tienen valor en dinero</b> y no pueden cambiarse por efectivo bajo ninguna circunstancia.</span>
+                            </li>
+                            <li class="text-[11px] text-slate-400 leading-relaxed flex gap-2">
+                                <span class="text-amber-500/60 flex-shrink-0">•</span>
+                                <span>Solo se acredita <b class="text-slate-300">una carga por día</b> por cuenta, sin excepciones.</span>
+                            </li>
+                            <li class="text-[11px] text-slate-400 leading-relaxed flex gap-2">
+                                <span class="text-amber-500/60 flex-shrink-0">•</span>
+                                <span>Los premios están <b class="text-slate-300">sujetos a disponibilidad</b>. Más que Burgers puede modificar el catálogo sin aviso previo.</span>
+                            </li>
+                            <li class="text-[11px] text-slate-400 leading-relaxed flex gap-2">
+                                <span class="text-amber-500/60 flex-shrink-0">•</span>
+                                <span>Tu PIN es <b class="text-slate-300">personal e intransferible</b>. No lo compartas. El local no se responsabiliza por usos no autorizados.</span>
+                            </li>
+                            <li class="text-[11px] text-slate-400 leading-relaxed flex gap-2">
+                                <span class="text-amber-500/60 flex-shrink-0">•</span>
+                                <span>El canje debe realizarse <b class="text-slate-300">antes de pagar</b>, mostrando esta pantalla en caja.</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Botones de acción -->
+            <div class="grid grid-cols-3 gap-2 sm:gap-3 mb-6">
+                <button onclick="abrirTyc()"
+                    class="flex flex-col items-center gap-2 p-3 sm:p-4 rounded-2xl bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.06] active:scale-95 transition-all">
+                    <div class="w-8 h-8 rounded-xl bg-blue-600/10 border border-blue-500/20 flex items-center justify-center flex-shrink-0">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                            <polyline points="14 2 14 8 20 8"/>
+                            <line x1="16" y1="13" x2="8" y2="13"/>
+                            <line x1="16" y1="17" x2="8" y2="17"/>
+                            <polyline points="10 9 9 9 8 9"/>
+                        </svg>
+                    </div>
+                    <span class="text-[10px] font-bold text-slate-400 text-center leading-tight">Términos y<br>condiciones</span>
+                </button>
+
+                <a href="https://wa.me/543735468085?text=Hola%2C%20necesito%20ayuda%20con%20mi%20cuenta%20de%20puntos%20de%20M%C3%A1s%20que%20Burgers."
+                    target="_blank" rel="noopener noreferrer"
+                    class="flex flex-col items-center gap-2 p-3 sm:p-4 rounded-2xl bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.06] active:scale-95 transition-all" style="text-decoration:none">
+                    <div class="w-8 h-8 rounded-xl bg-emerald-600/10 border border-emerald-500/20 flex items-center justify-center flex-shrink-0">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="#4ade80">
+                            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z"/>
+                        </svg>
+                    </div>
+                    <span class="text-[10px] font-bold text-slate-400 text-center leading-tight">Ayuda</span>
+                </a>
+
+                <a href="https://wa.me/543735468085?text=Hola%2C%20quisiera%20cancelar%20mi%20cuenta%20del%20programa%20de%20puntos%20de%20M%C3%A1s%20que%20Burgers."
+                    target="_blank" rel="noopener noreferrer"
+                    class="flex flex-col items-center gap-2 p-3 sm:p-4 rounded-2xl bg-white/[0.03] border border-rose-500/[0.08] hover:bg-rose-500/[0.05] active:scale-95 transition-all" style="text-decoration:none">
+                    <div class="w-8 h-8 rounded-xl bg-rose-600/10 border border-rose-500/20 flex items-center justify-center flex-shrink-0">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"/>
+                            <line x1="15" y1="9" x2="9" y2="15"/>
+                            <line x1="9" y1="9" x2="15" y2="15"/>
+                        </svg>
+                    </div>
+                    <span class="text-[10px] font-bold text-slate-400 text-center leading-tight">Cancelar<br>cuenta</span>
+                </a>
+            </div>
+
+            <!-- Créditos -->
+            <p class="text-center text-[10px] text-slate-700 font-medium">
+                © Más que Burgers · Programa de puntos
+            </p>
+        </div>
+    </footer>
+
 </div>
 
 <div id="actividadOverlay" onclick="cerrarActividadOverlay(event)">
@@ -725,7 +994,7 @@
                     <p class="text-[10px] text-slate-500 font-semibold" id="actividadSubtitulo">Historial de movimientos</p>
                 </div>
             </div>
-            <button onclick="cerrarActividad()" class="w-8 h-8 rounded-full flex items-center justify-center bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] transition-all text-slate-400 hover:text-white">
+            <button onclick="cerrarActividad()" class="btn-cerrar-modal w-8 h-8 rounded-full flex items-center justify-center bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] transition-all text-slate-400 hover:text-white">
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
                 </svg>
@@ -801,6 +1070,7 @@
         <div class="drag-handle"></div>
 
         <div class="tyc-header">
+            <div class="flex items-center justify-between">
             <div class="flex items-center gap-3">
                 <div class="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0"
                      style="background:rgba(37,99,235,0.1);border:1px solid rgba(37,99,235,0.25)">
@@ -817,6 +1087,12 @@
                     <h2 class="font-black text-sm text-white tracking-tight">Términos y Condiciones</h2>
                     <p class="text-[10px] text-slate-500 font-semibold mt-0.5">Sistema de Puntos · Más que Burgers</p>
                 </div>
+            </div>
+            <button onclick="cerrarTyc()" class="btn-cerrar-modal w-8 h-8 rounded-full flex items-center justify-center bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] transition-all text-slate-400 hover:text-white">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
             </div>
         </div>
 
@@ -877,32 +1153,45 @@
         </div>
 
         <div class="tyc-footer">
-            <label class="tyc-checkbox-wrap mb-4 select-none" id="tycCheckboxLabel">
-                <div class="tyc-checkbox-box" id="tycCheckboxBox">
-                    <svg class="tyc-check-icon" xmlns="http://www.w3.org/2000/svg" width="10" height="10"
-                         viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="3.5"
-                         stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="20 6 9 17 4 12"/>
-                    </svg>
-                </div>
-                <span class="text-[11px] text-slate-400 leading-relaxed font-medium">
-                    Leí y acepto los <span class="text-blue-400 font-bold">Términos y Condiciones</span> del programa de puntos de Más que Burgers.
-                </span>
-            </label>
+            <!-- Modo aceptación (primera vez) -->
+            <div id="tycFooterAceptar">
+                <label class="tyc-checkbox-wrap mb-4 select-none" id="tycCheckboxLabel">
+                    <div class="tyc-checkbox-box" id="tycCheckboxBox">
+                        <svg class="tyc-check-icon" xmlns="http://www.w3.org/2000/svg" width="10" height="10"
+                             viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="3.5"
+                             stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                    </div>
+                    <span class="text-[11px] text-slate-400 leading-relaxed font-medium">
+                        Leí y acepto los <span class="text-blue-400 font-bold">Términos y Condiciones</span> del programa de puntos de Más que Burgers.
+                    </span>
+                </label>
 
-            <div class="flex gap-2.5">
-                <button onclick="rechazarTyc()"
-                    class="flex-1 py-3 rounded-2xl font-bold text-xs uppercase tracking-wider
-                           text-slate-500 bg-white/[0.03] border border-white/[0.06]
-                           hover:bg-white/[0.06] hover:text-slate-300 transition-all active:scale-95">
-                    No acepto
-                </button>
-                <button id="btnAceptarTyc" onclick="aceptarTyc()" disabled
-                    class="flex-[2] py-3 rounded-2xl font-bold text-xs uppercase tracking-wider
+                <div class="flex gap-2.5">
+                    <button onclick="rechazarTyc()"
+                        class="flex-1 py-3 rounded-2xl font-bold text-xs uppercase tracking-wider
+                               text-slate-500 bg-white/[0.03] border border-white/[0.06]
+                               hover:bg-white/[0.06] hover:text-slate-300 transition-all active:scale-95">
+                        No acepto
+                    </button>
+                    <button id="btnAceptarTyc" onclick="aceptarTyc()" disabled
+                        class="flex-[2] py-3 rounded-2xl font-bold text-xs uppercase tracking-wider
+                               text-white bg-blue-700 hover:bg-blue-600
+                               shadow-lg shadow-blue-900/30 transition-all flex items-center justify-center gap-2">
+                        <span id="btnAceptarTycText">Aceptar y continuar</span>
+                        <div id="btnAceptarTycSpinner" class="btn-spinner hidden"></div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Modo consulta (ya aceptó) -->
+            <div id="tycFooterCerrar" class="hidden">
+                <button onclick="cerrarTyc()"
+                    class="w-full py-3 rounded-2xl font-bold text-xs uppercase tracking-wider
                            text-white bg-blue-700 hover:bg-blue-600
-                           shadow-lg shadow-blue-900/30 transition-all flex items-center justify-center gap-2">
-                    <span id="btnAceptarTycText">Aceptar y continuar</span>
-                    <div id="btnAceptarTycSpinner" class="btn-spinner hidden"></div>
+                           shadow-lg shadow-blue-900/30 transition-all active:scale-95">
+                    Cerrar
                 </button>
             </div>
         </div>
@@ -928,41 +1217,44 @@
         document.getElementById('pinBtn').classList.toggle('active', pinVisible);
     }
 
-    /* SALUDO — horario de atención 19:00 a 01:45 */
-    function obtenerSaludo() {
-        const h = new Date().getHours();
-        const m = new Date().getMinutes();
+   /* SALUDO — horario de atención 20:00 a 00:30 */
+function obtenerSaludo() {
+    const h = new Date().getHours();
 
-        // Madrugada abierta: 00:00 a 01:45
-        if (h === 0 || (h === 1 && m <= 45)) {
-            const madrugada = [
-                { texto: 'Buenas noches', motiv: 'Todavía abrimos, pasá a sumar puntos' },
-                { texto: '¡Aún abrimos!', motiv: 'Última chance de la noche 🍔' },
-            ];
-            return madrugada[Math.floor(Math.random() * madrugada.length)];
-        }
-
-        // Cerrado madrugada tardía: 01:46 a 05:59
-        if (h >= 2 && h < 6) return { texto: 'Buenas noches', motiv: 'Abrimos esta noche desde las 19 h' };
-
-        // Mañana: 06:00 a 11:59
-        if (h >= 6 && h < 12) return { texto: 'Buenos días',   motiv: 'Esta noche abrimos desde las 19 h 🍔' };
-
-        // Mediodía: 12:00 a 14:59
-        if (h >= 12 && h < 15) return { texto: 'Buen mediodía', motiv: 'Guardá el hambre para la noche 🍔' };
-
-        // Tarde cerrado: 15:00 a 18:59
-        if (h >= 15 && h < 19) return { texto: 'Buenas tardes', motiv: 'Ya casi es hora — abrimos a las 19 🍔' };
-
-        // Noche abierta: 19:00 a 23:59
-        const abiertos = [
-            { texto: '¡Abrimos!',         motiv: 'Esta noche venís a comer 🍔' },
-            { texto: 'Esta noche,',        motiv: '¿Te mandamos una burger?' },
-            { texto: 'Buenas noches',      motiv: 'La noche pide una burger 🍔' },
-            { texto: '¡Estamos abiertos!', motiv: 'Pasá a sumar puntos esta noche' },
+    // Mañana: 06:00 a 11:59
+    if (h >= 6 && h < 12) {
+        const mensajes = [
+            { texto: 'Buen día', motiv: 'Esta noche abrimos desde las 20 🍔' },
+            { texto: 'Buen día', motiv: 'Hoy te esperamos con las mejores burgers 🍔' },
         ];
-        return abiertos[Math.floor(Math.random() * abiertos.length)];
+        return mensajes[Math.floor(Math.random() * mensajes.length)];
     }
+
+    // Tarde: 12:00 a 19:59
+    if (h >= 12 && h < 20) {
+        const mensajes = [
+            { texto: 'Buenas tardes', motiv: 'Ya falta poco — abrimos a las 20 🍔' },
+            { texto: 'Buenas tardes', motiv: 'Andá preparando el hambre 🍔' },
+        ];
+        return mensajes[Math.floor(Math.random() * mensajes.length)];
+    }
+
+    // Noche abierta: 20:00 a 00:30
+    if (h >= 20 || h === 0) {
+        const mensajes = [
+            { texto: 'Buenas noches', motiv: 'La noche pide una burger 🍔' },
+            { texto: 'Buenas noches', motiv: 'Pasá a sumar puntos esta noche 🍔' },
+            { texto: 'Buenas noches', motiv: '¿Sale burger esta noche? 🍔' },
+        ];
+        return mensajes[Math.floor(Math.random() * mensajes.length)];
+    }
+
+    // Madrugada cerrada: 01:00 a 05:59
+    return {
+        texto: 'Buenas noches',
+        motiv: 'Te esperamos esta noche desde las 20:00 🍔'
+    };
+}
 
     /* ── TÉRMINOS Y CONDICIONES ─────────────────────────── */
     let tycCheckboxActivo = false;
@@ -975,7 +1267,18 @@
         document.getElementById('btnAceptarTyc').disabled = !tycCheckboxActivo;
     });
 
-    function abrirTyc() {
+    async function abrirTyc() {
+        // Si el usuario ya aceptó los TyC, mostrar solo el botón de cerrar
+        let yaAcepto = false;
+        if (usuarioActual) {
+            try {
+                const tyc = await getTycStatus(usuarioActual.tarjeta);
+                yaAcepto = tyc && tyc.aceptado;
+            } catch(e) {}
+        }
+        document.getElementById('tycFooterAceptar').classList.toggle('hidden', yaAcepto);
+        document.getElementById('tycFooterCerrar').classList.toggle('hidden', !yaAcepto);
+
         document.getElementById('tycOverlay').classList.add('open');
         document.body.style.overflow = 'hidden';
     }
@@ -1023,6 +1326,58 @@
     }
     // Cerrar con Escape
     document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarActividad(); });
+
+    /* ── DRAG TO DISMISS ─────────────────────────────────────
+       Funciona en ambos paneles: actividadPanel y tycPanel.
+       Al arrastrar la barrita hacia abajo más de 80px, cierra.
+    ──────────────────────────────────────────────────────── */
+    function initDragToDismiss(handleEl, panelEl, closeFn) {
+        let startY = 0, currentY = 0, dragging = false;
+
+        function onStart(e) {
+            dragging = true;
+            startY = e.touches ? e.touches[0].clientY : e.clientY;
+            currentY = 0;
+            panelEl.style.transition = 'none';
+        }
+        function onMove(e) {
+            if (!dragging) return;
+            const y = (e.touches ? e.touches[0].clientY : e.clientY) - startY;
+            if (y < 0) return; // No subir
+            currentY = y;
+            panelEl.style.transform = `translateY(${y}px)`;
+        }
+        function onEnd() {
+            if (!dragging) return;
+            dragging = false;
+            panelEl.style.transition = '';
+            if (currentY > 80) {
+                panelEl.style.transform = '';
+                closeFn();
+            } else {
+                panelEl.style.transform = '';
+            }
+        }
+
+        handleEl.addEventListener('touchstart', onStart, { passive: true });
+        handleEl.addEventListener('touchmove',  onMove,  { passive: true });
+        handleEl.addEventListener('touchend',   onEnd);
+        handleEl.addEventListener('mousedown',  onStart);
+        window.addEventListener('mousemove', onMove);
+        window.addEventListener('mouseup',   onEnd);
+    }
+
+    // Inicializar drag en ambos paneles
+    initDragToDismiss(
+        document.querySelector('#actividadPanel .drag-handle'),
+        document.getElementById('actividadPanel'),
+        cerrarActividad
+    );
+    initDragToDismiss(
+        document.querySelector('#tycPanel .drag-handle'),
+        document.getElementById('tycPanel'),
+        cerrarTyc
+    );
 
     /* OVERRIDE renderHistorial */
     window.renderHistorial = function() {
@@ -1130,6 +1485,7 @@
 
         renderProgreso();
         renderGanaPuntos();
+        renderAdBanner();
         renderPremios();
         renderHistorial();
     };
@@ -1152,12 +1508,16 @@
             return;
         }
 
-        container.innerHTML = cargables.map((p, index) => {
+        const LIMITE = 4;
+        const hayMas = cargables.length > LIMITE;
+
+        const fallbackSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#334155" stroke-width="1.8"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>`;
+
+        const renderItem = (p, oculto) => {
             const pts = p.puntosCargar ?? p.puntos ?? 0;
             const tieneImagen = p.imagen && p.imagen.trim() !== '';
-            const fallbackSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#334155" stroke-width="1.8"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>`;
             return `
-                <div class="flex items-center gap-3 px-4 py-3 hover:bg-white/[0.03] transition-colors">
+                <div class="gana-item flex items-center gap-3 px-4 py-3 hover:bg-white/[0.03] transition-colors"${oculto ? ' style="display:none"' : ''}>
                     <div class="w-9 h-9 flex-shrink-0 overflow-hidden rounded-xl border border-white/10 bg-slate-800 flex items-center justify-center">
                         ${tieneImagen
                             ? `<img src="${p.imagen}" alt="${p.nombre}" class="w-full h-full object-cover" onerror="imgFallback(this)">`
@@ -1176,7 +1536,76 @@
                         <span class="text-emerald-600 font-bold text-[9px] uppercase">pts</span>
                     </div>
                 </div>`;
-        }).join('');
+        };
+
+        const items = cargables.map((p, i) => renderItem(p, i >= LIMITE)).join('');
+
+        const boton = hayMas ? `
+            <button id="btnVerMasGana" class="ver-mas-btn" onclick="toggleVerMasGana(this)">
+                <span id="btnVerMasGanaText">Ver ${cargables.length - LIMITE} producto${cargables.length - LIMITE > 1 ? 's' : ''} más</span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="6 9 12 15 18 9"/>
+                </svg>
+            </button>` : '';
+
+        container.innerHTML = items + boton;
+    };
+
+    window.toggleVerMasGana = function(btn) {
+        const container = document.getElementById('ganaPuntosContainer');
+        const items = container.querySelectorAll('.gana-item');
+        const textSpan = document.getElementById('btnVerMasGanaText');
+        const LIMITE = 4;
+        const expandido = btn.classList.contains('expanded');
+
+        if (expandido) {
+            items.forEach((el, i) => { if (i >= LIMITE) el.style.display = 'none'; });
+            textSpan.textContent = `Ver ${items.length - LIMITE} producto${items.length - LIMITE > 1 ? 's' : ''} más`;
+            btn.classList.remove('expanded');
+        } else {
+            items.forEach(el => el.style.display = '');
+            textSpan.textContent = 'Ver menos';
+            btn.classList.add('expanded');
+        }
+    };
+
+    /* ────────────────────────────────────────────────────────
+       renderAdBanner — muestra publicidad debajo de productos
+       que suman puntos.
+
+       Para configurar la publicidad, creá un documento en
+       Firebase en la colección "config" con id "publicidad"
+       y los campos:
+         - activa  (boolean)  — true para mostrar el banner
+         - imagen  (string)   — URL del flyer/imagen
+         - titulo  (string)   — texto grande del banner
+         - subtitulo (string) — texto chico descriptivo
+         - tag     (string)   — etiqueta chip (ej: "Promo activa", "Oferta", "Novedad")
+
+       Si no existe ese documento o activa === false, el banner
+       se oculta automáticamente.
+    ──────────────────────────────────────────────────────── */
+    window.renderAdBanner = async function() {
+        const banner = document.getElementById('adBanner');
+        if (!banner) return;
+
+        try {
+            // Usamos la API compat de Firebase (misma que db.js)
+            const data = await getAdConfig();
+
+            if (data && data.activa && data.imagen && data.titulo) {
+                document.getElementById('adBannerImg').src           = data.imagen;
+                document.getElementById('adBannerTitle').textContent = data.titulo;
+                document.getElementById('adBannerSub').textContent   = data.subtitulo || '';
+                document.getElementById('adBannerTag').textContent   = data.tag || 'Promo activa';
+                banner.style.display = 'flex';
+            } else {
+                banner.style.display = 'none';
+            }
+        } catch (e) {
+            // Si no hay config de publicidad, simplemente ocultamos el banner
+            banner.style.display = 'none';
+        }
     };
 
 </script>
