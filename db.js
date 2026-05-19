@@ -140,3 +140,27 @@ async function getUsuarioByPin(pin) {
     return null;
   }
 }
+
+// ── PUBLICIDAD / ADS ───────────────────────────────────────
+// Lee la configuración del banner desde Firestore
+async function getAdConfig() {
+  try {
+    const docSnap = await db.collection('config').doc('publicidad').get();
+    if (docSnap.exists) return docSnap.data();
+    return null;
+  } catch (error) {
+    console.error('Error leyendo config de publicidad:', error);
+    return null;
+  }
+}
+
+// Guarda la configuración del banner en Firestore
+async function saveAdConfig(payload) {
+  try {
+    await db.collection('config').doc('publicidad').set(payload);
+    console.log('Config publicidad guardada OK');
+  } catch (error) {
+    console.error('Error guardando config de publicidad:', error);
+    throw error;
+  }
+}
