@@ -145,28 +145,29 @@ function switchTab(tab) {
         return;
     }
 
-    const tabs = ['gestion', 'stock', 'productos', 'tyc'];
-    tabs.forEach(t => {
-        const sec = document.getElementById(`section-${t}`);
-        if (sec) {
-            sec.classList.add("hidden");
-            sec.style.display = '';  // limpia cualquier inline style
+    const tabs = ['gestion', 'stock', 'productos', 'tyc', 'ads'];
+        tabs.forEach(t => {
+            const sec = document.getElementById(`section-${t}`);
+            if (sec) {
+                sec.classList.add("hidden");
+                sec.style.display = '';  // limpia cualquier inline style
+            }
+            document.getElementById(`btn-tab-${t}`)?.classList.remove("tab-active");
+            document.getElementById(`btn-tab-${t}`)?.classList.add("text-slate-500");
+        });
+
+        const secActiva = document.getElementById(`section-${tab}`);
+        if (secActiva) {
+            secActiva.classList.remove("hidden");
+            secActiva.style.display = '';  // asegura que no quede bloqueado por inline style
         }
-        document.getElementById(`btn-tab-${t}`)?.classList.remove("tab-active");
-        document.getElementById(`btn-tab-${t}`)?.classList.add("text-slate-500");
-    });
+        document.getElementById(`btn-tab-${tab}`)?.classList.add("tab-active");
+        document.getElementById(`btn-tab-${tab}`)?.classList.remove("text-slate-500");
 
-    const secActiva = document.getElementById(`section-${tab}`);
-    if (secActiva) {
-        secActiva.classList.remove("hidden");
-        secActiva.style.display = '';  // asegura que no quede bloqueado por inline style
-    }
-    document.getElementById(`btn-tab-${tab}`)?.classList.add("tab-active");
-    document.getElementById(`btn-tab-${tab}`)?.classList.remove("text-slate-500");
-
-    if (tab === 'stock') renderStock();
-    if (tab === 'productos') renderPanelProductos();
-    if (tab === 'tyc') cargarTyc();
+        if (tab === 'stock') renderStock();
+        if (tab === 'productos') renderPanelProductos();
+        if (tab === 'tyc') cargarTyc();
+        if (tab === 'ads') cargarAd();
 }
 
 
@@ -764,6 +765,10 @@ function renderStock() {
                             class="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-blue-800/30 hover:text-blue-400 text-slate-400 text-[10px] font-bold border border-white/5 transition-all">
                             Editar
                         </button>
+                        <button onclick="resetearPuntosDesdeTabla('${u.tarjeta}')"
+                            class="px-3 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 text-[10px] font-bold border border-amber-500/10 transition-all">
+                            Resetear
+                        </button>
                         <button onclick="eliminarDesdeTabla('${u.tarjeta}')"
                             class="px-3 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-[10px] font-bold border border-rose-500/10 transition-all">
                             Eliminar
@@ -885,6 +890,37 @@ function showConfirm({ titulo, mensaje, tipo = 'danger', labelAceptar = 'Confirm
 }
 
 // ── Eliminar directamente desde la tabla sin abrir el modal de edición
+async function resetearPuntosDesdeTabla(tarjeta) {
+    const u = usuarios.find(x => x.tarjeta === tarjeta);
+    if (!u) return;
+
+    if (u.puntos === 0) {
+        showToast('El cliente ya tiene 0 puntos.', 'warn');
+        return;
+    }
+
+    showConfirm({
+        titulo: 'Resetear puntos',
+        mensaje: `¿Resetear los puntos de ${u.nombre}? Sus ${u.puntos} puntos quedarán en 0. El cliente y su historial se conservan.`,
+        tipo: 'warn',
+        labelAceptar: 'Resetear',
+        onAceptar: async () => {
+            const puntosAnteriores = u.puntos;
+            u.historial.push({
+                idTx: generarIdTx(),
+                fecha: new Date().toISOString().split('T')[0],
+                descripcion: `Reset manual (−${puntosAnteriores} pts)`,
+                puntos: -puntosAnteriores
+            });
+            u.puntos = 0;
+            await updateUsuario(u);
+            showToast(`Puntos de ${u.nombre} reseteados a 0.`, 'success');
+            if (clienteActual && clienteActual.tarjeta === tarjeta) buscarCliente();
+            renderStock();
+        }
+    });
+}
+
 async function eliminarDesdeTabla(tarjeta) {
     const u = usuarios.find(x => x.tarjeta === tarjeta);
     if (!u) return;
@@ -1362,4 +1398,144 @@ function renderTyc() {
                 </td>
             </tr>`;
         }).join('');
+}
+
+// ══════════════════════════════════════════════════════════════
+// MÓDULO ADS — Gestión del banner publicitario en la app cliente
+// ══════════════════════════════════════════════════════════════
+
+let adActivoActual = false; // estado local del toggle
+
+// Carga la config de publicidad desde Firebase y llena el formulario
+async function cargarAd() {
+    try {
+        const docSnap = await db.collection('config').doc('publicidad').get();
+        if (docSnap.exists) {
+            const d = docSnap.data();
+            document.getElementById('adTag').value       = d.tag       || '';
+            document.getElementById('adTitulo').value    = d.titulo    || '';
+            document.getElementById('adSubtitulo').value = d.subtitulo || '';
+            document.getElementById('adImagen').value    = d.imagen    || '';
+            adActivoActual = !!d.activa;
+            actualizarEstadoFirebase(d);
+        } else {
+            adActivoActual = false;
+            actualizarEstadoFirebase(null);
+        }
+        aplicarToggleUI(adActivoActual);
+        actualizarPreviewAd();
+    } catch (e) {
+        console.error('Error cargando publicidad:', e);
+        showToast('No se pudo cargar la configuración de publicidad.', 'error');
+    }
+}
+
+// Guarda la config en Firebase
+async function guardarAd() {
+    const titulo  = document.getElementById('adTitulo').value.trim();
+    const imagen  = document.getElementById('adImagen').value.trim();
+    const tag     = document.getElementById('adTag').value.trim();
+    const sub     = document.getElementById('adSubtitulo').value.trim();
+
+    if (!titulo || !imagen) {
+        showToast('El título y la URL de imagen son obligatorios.', 'warn');
+        return;
+    }
+
+    setBtnLoading('btnGuardarAd', 'btnGuardarAdText', 'btnGuardarAdSpinner', true, 'Guardar');
+
+    try {
+        const payload = {
+            activa:    adActivoActual,
+            titulo,
+            subtitulo: sub,
+            tag:       tag || 'Promo activa',
+            imagen,
+            updatedAt: new Date().toISOString()
+        };
+        await db.collection('config').doc('publicidad').set(payload);
+        actualizarEstadoFirebase(payload);
+        showToast(adActivoActual ? '¡Banner guardado y activo!' : 'Banner guardado (inactivo).', 'success');
+    } catch (e) {
+        console.error('Error guardando publicidad:', e);
+        showToast('Error al guardar. Revisá la consola.', 'error');
+    } finally {
+        setBtnLoading('btnGuardarAd', 'btnGuardarAdText', 'btnGuardarAdSpinner', false, 'Guardar');
+    }
+}
+
+// Alterna activo/inactivo
+function toggleAdActivo() {
+    adActivoActual = !adActivoActual;
+    aplicarToggleUI(adActivoActual);
+}
+
+function aplicarToggleUI(activo) {
+    const thumb = document.getElementById('adToggleThumb');
+    const btn   = document.getElementById('adToggleBtn');
+    const label = document.getElementById('adToggleLabel');
+    if (activo) {
+        thumb.style.transform    = 'translateX(20px)';
+        thumb.style.background   = '#2563eb';
+        btn.style.background     = 'rgba(37,99,235,0.25)';
+        btn.style.borderColor    = 'rgba(37,99,235,0.4)';
+        label.textContent        = 'Activo';
+        label.className          = 'text-[10px] font-black uppercase tracking-widest text-blue-400';
+    } else {
+        thumb.style.transform    = 'translateX(0)';
+        thumb.style.background   = '#475569';
+        btn.style.background     = '';
+        btn.style.borderColor    = '';
+        label.textContent        = 'Inactivo';
+        label.className          = 'text-[10px] font-black uppercase tracking-widest text-slate-600';
+    }
+}
+
+// Actualiza la preview en tiempo real mientras el admin escribe
+function actualizarPreviewAd() {
+    const tag   = document.getElementById('adTag').value.trim()    || 'Promo activa';
+    const titulo= document.getElementById('adTitulo').value.trim() || 'Tu título aparecerá acá';
+    const sub   = document.getElementById('adSubtitulo').value.trim();
+    const img   = document.getElementById('adImagen').value.trim();
+
+    document.getElementById('adPreviewTag').textContent    = tag;
+    document.getElementById('adPreviewTitulo').textContent = titulo;
+
+    const subEl = document.getElementById('adPreviewSub');
+    if (sub) {
+        subEl.textContent = sub;
+        subEl.classList.remove('hidden');
+    } else {
+        subEl.classList.add('hidden');
+    }
+
+    const previewImg  = document.getElementById('adPreviewImg');
+    const placeholder = document.getElementById('adPreviewImgPlaceholder');
+    if (img) {
+        previewImg.src = img;
+        previewImg.classList.remove('hidden');
+        placeholder.classList.add('hidden');
+        previewImg.onerror = () => {
+            previewImg.classList.add('hidden');
+            placeholder.classList.remove('hidden');
+        };
+    } else {
+        previewImg.classList.add('hidden');
+        placeholder.classList.remove('hidden');
+    }
+}
+
+// Refleja los datos guardados en Firebase en el panel de estado
+function actualizarEstadoFirebase(d) {
+    document.getElementById('adEstActivo').textContent  = d?.activa
+        ? '✅ Activo'
+        : '⬜ Inactivo';
+    document.getElementById('adEstActivo').className = d?.activa
+        ? 'text-xs font-black text-emerald-400'
+        : 'text-xs font-black text-slate-500';
+    document.getElementById('adEstTitulo').textContent  = d?.titulo    || '—';
+    document.getElementById('adEstTag').textContent     = d?.tag       || '—';
+    document.getElementById('adEstImagen').textContent  = d?.imagen
+        ? '✓ ' + d.imagen.replace(/^https?:\/\//, '').substring(0, 40) + '…'
+        : '—';
 }
