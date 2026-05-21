@@ -7,6 +7,8 @@
      <link rel="icon" href="https://imagedelivery.net/ut8GNCA1obOu4JnXrJ_J9Q/e7b59903-06e0-48f8-1bb1-71bd6da8a800/public" type="image/x-icon">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#050508">
     <style>
         body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #050508; color: #f8fafc; }
         .glass { background: rgba(255, 255, 255, 0.02); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); }
@@ -991,5 +993,17 @@
             if (e.target === document.getElementById('modalConfirmOp')) cerrarModalProductos();
         });
     </script>
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('Service Worker registrado con éxito.', reg))
+                    .catch(err => console.error('Error al registrar el Service Worker:', err));
+            });
+        }
+    </script>
+</body>
+</html>
 </body>
 </html>
