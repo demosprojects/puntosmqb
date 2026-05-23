@@ -316,16 +316,31 @@ async function activarTarjeta() {
     const index = usuarios.findIndex(u => u.tarjeta === tarjetaBuscadaActual);
     usuarios[index] = {
         ...usuarios[index],
-        asignada: true, nombre, telefono: tel, puntos: 100, pin: nuevoPin,
+        asignada: true, nombre, telefono: tel, puntos: 100, pin: nuevoPin, pinCambiado: false,
         historial: [{ idTx: generarIdTx(), fecha: new Date().toISOString().split('T')[0], descripcion: "Bono Bienvenida", puntos: 100 }]
     };
     await updateUsuario(usuarios[index]);
     
     setBtnLoading('btnActivar', 'btnActivarText', 'btnActivarSpinner', false, 'Activar Tarjeta');
-    
-    // 3. Abrir modal personalizado de éxito con el PIN generado
+
+    // 3. Abrir modal de éxito con QR — el PIN nunca aparece en pantalla
     document.getElementById('modalPinNombre').innerText = nombre;
-    document.getElementById('modalPinGenerado').innerText = nuevoPin;
+
+    // Construir la URL a la que apunta el QR: pin.html con ?pin=XXXX
+    const urlQR = `https://masqueburgers.com.ar/pin.html?pin=${nuevoPin}`;
+
+    // Generar el QR dentro del contenedor (limpiar primero si ya había uno)
+    const qrContainer = document.getElementById('qrActivacionContainer');
+    qrContainer.innerHTML = '';
+    new QRCode(qrContainer, {
+        text: urlQR,
+        width: 180,
+        height: 180,
+        colorDark: '#ffffff',
+        colorLight: '#0a0a10',
+        correctLevel: QRCode.CorrectLevel.M
+    });
+
     document.getElementById('modalPinActivacion').classList.remove('hidden');
     lockScroll();
     
@@ -934,6 +949,10 @@ async function eliminarDesdeTabla(tarjeta) {
             const idx = usuarios.findIndex(x => x.tarjeta === tarjeta);
             usuarios[idx] = { tarjeta: u.tarjeta, asignada: false, nombre: "", telefono: "", puntos: 0, historial: [] };
             await updateUsuario(usuarios[idx]);
+            // Eliminar también el registro de TyC del cliente
+            await db.collection("tyc_aceptaciones").doc(tarjeta).delete().catch(() => {});
+            // Limpiar del cache local de TyC para que no reaparezca sin recargar
+            tycData = tycData.filter(r => r.tarjeta !== tarjeta);
             showToast('Cliente eliminado. Tarjeta y PIN liberados.', 'success');
             if (clienteActual && clienteActual.tarjeta === tarjeta) volverAlInicio();
             renderStock();
@@ -956,6 +975,10 @@ async function eliminarClienteActual() {
             const idx = usuarios.findIndex(x => x.tarjeta === tarjetaEditandoActual);
             usuarios[idx] = { tarjeta: u.tarjeta, asignada: false, nombre: "", telefono: "", puntos: 0, historial: [] };
             await updateUsuario(usuarios[idx]);
+            // Eliminar también el registro de TyC del cliente
+            await db.collection("tyc_aceptaciones").doc(tarjetaEditandoActual).delete().catch(() => {});
+            // Limpiar del cache local de TyC para que no reaparezca sin recargar
+            tycData = tycData.filter(r => r.tarjeta !== tarjetaEditandoActual);
             setBtnLoading('btnGuardarEdit', 'btnGuardarEditText', 'btnGuardarEditSpinner', false, 'Guardar');
             showToast('Cliente eliminado. Tarjeta y PIN liberados.', 'success');
             cerrarModalEditar();
