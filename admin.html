@@ -884,18 +884,33 @@
 
     <div id="modalPinActivacion" class="hidden fixed inset-0 z-[99999] flex items-center justify-center p-6" style="background:rgba(0,0,0,0.8);backdrop-filter:blur(8px);">
         <div class="glass rounded-[2rem] p-10 w-full max-w-sm space-y-6 border border-blue-500/20 animate-in zoom-in duration-300 text-center" style="background:rgba(5,5,8,0.97);">
-            <div class="w-16 h-16 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center mx-auto">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="5" y="11" width="14" height="10" rx="2" stroke="#60a5fa" stroke-width="1.5" fill="none"/><path d="M8 11V7a4 4 0 018 0v4" stroke="#60a5fa" stroke-width="1.5" stroke-linecap="round"/><circle cx="12" cy="16" r="1.5" fill="#60a5fa"/></svg>
+            <div class="w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 6L9 17l-5-5" stroke="#34d399" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
             </div>
             <div>
-                <h2 class="text-2xl font-black uppercase italic tracking-tighter text-white">Tarjeta Activada</h2>
-                <p class="text-xs text-slate-500 font-medium mt-1">El cliente <b id="modalPinNombre" class="text-slate-300"></b> ya puede acceder.</p>
+                <h2 class="text-2xl font-black uppercase italic tracking-tighter text-white">¡Tarjeta Activada!</h2>
+                <p class="text-xs text-slate-500 font-medium mt-1">Escaneá el QR con el celu de <b id="modalPinNombre" class="text-slate-300"></b>.</p>
             </div>
 
-            <div class="bg-slate-900/80 rounded-2xl p-6 border border-white/5 shadow-inner space-y-2">
-                <p class="text-[10px] uppercase font-black text-slate-500 tracking-widest">PIN de acceso</p>
-                <p id="modalPinGenerado" class="text-5xl font-mono font-black text-white tracking-[0.25em]"></p>
-                <p class="text-[10px] text-slate-600 italic">Anotá o compartí este código con el cliente.</p>
+            <div class="bg-slate-900/80 rounded-2xl p-6 border border-white/5 shadow-inner space-y-4">
+                <div class="space-y-1 text-center">
+                    <p class="text-[10px] uppercase font-black text-slate-500 tracking-widest">Código de acceso</p>
+                    <p class="text-[11px] text-slate-400 font-medium leading-relaxed">
+                        Mostrá este QR al cliente para que lo escanee con su cámara.<br>
+                        Lo llevará directo a la app con su acceso listo.
+                    </p>
+                </div>
+                <!-- QR generado por JS — el PIN nunca se muestra en pantalla -->
+                <div class="flex justify-center">
+                    <div id="qrActivacionContainer"
+                        class="rounded-2xl overflow-hidden p-3 border border-blue-500/20"
+                        style="background:#0a0a10;">
+                        <!-- QRCode.js renderiza acá -->
+                    </div>
+                </div>
+                <p class="text-[10px] text-slate-600 italic text-center">
+                    Al primer ingreso, el sistema le pedirá crear su propio PIN personal.
+                </p>
             </div>
 
             <button onclick="cerrarModalPinActivacion()" class="w-full bg-blue-600 hover:bg-blue-500 p-4 rounded-xl font-bold text-xs uppercase tracking-widest transition-all shadow-lg shadow-blue-900/20">
@@ -928,6 +943,7 @@
 
     <!-- ══════════════════════════════════════════════════════ -->
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
