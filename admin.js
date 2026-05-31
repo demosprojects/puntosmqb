@@ -342,6 +342,9 @@ async function activarTarjeta() {
     });
 
     document.getElementById('modalPinActivacion').classList.remove('hidden');
+    // Mostrar el PIN en texto para los que no pueden escanear el QR
+    const pinTextoEl = document.getElementById('pinActivacionTexto');
+    if (pinTextoEl) pinTextoEl.textContent = nuevoPin;
     lockScroll();
     
     document.getElementById("nuevoNombre").value = "";
