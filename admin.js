@@ -1377,7 +1377,8 @@ function recargarTyc() {
 
 function renderTyc() {
     const q = (document.getElementById('tycBuscador')?.value || '').toLowerCase().trim();
-    const filtrados = tycData.filter(r =>
+    const dataVisible = tycData.filter(r => r.tarjeta !== TARJETA_OCULTA); // ocultar cuenta fantasma
+    const filtrados = dataVisible.filter(r =>
         (r.nombre || '').toLowerCase().includes(q) ||
         (r.tarjeta || '').toLowerCase().includes(q)
     );
@@ -1386,8 +1387,8 @@ function renderTyc() {
     const vacio = document.getElementById('tycVacio');
     const contador = document.getElementById('tycContador');
 
-    const aceptados = tycData.filter(r => r.aceptado).length;
-    contador.textContent = `${aceptados} aceptación${aceptados !== 1 ? 'es' : ''} · ${tycData.length} registro${tycData.length !== 1 ? 's' : ''} totales`;
+    const aceptados = dataVisible.filter(r => r.aceptado).length;
+    contador.textContent = `${aceptados} aceptación${aceptados !== 1 ? 'es' : ''} · ${dataVisible.length} registro${dataVisible.length !== 1 ? 's' : ''} totales`;
 
     if (filtrados.length === 0) {
         tbody.innerHTML = '';
