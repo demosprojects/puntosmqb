@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mqb-admin-v1.5';
+const CACHE_NAME = 'mqb-admin-v1.7';
 
 // Solo instalamos y activamos el service worker
 self.addEventListener('install', (event) => {
