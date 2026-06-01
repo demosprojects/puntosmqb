@@ -1,8 +1,29 @@
 let clienteActual = null;
 let tarjetaBuscadaActual = null;
+let esMozo = false; // true cuando el usuario logueado es mozo@masqueburgers.com
+
+// ── Sistema de reserva de tarjetas ────────────────────────────
+// Al validar una tarjeta libre se escribe un lock en Firestore al instante.
+// Eso la marca como "En asignación" para todos los demás en tiempo real.
+// El lock se libera al activar la tarjeta o al volver atrás.
+let tarjetaReservadaActual = null;   // número de tarjeta que este dispositivo tiene reservada
+
+// ── Listener de tiempo real para la sección stock ─────────────
+let stockUnsubscribe = null;         // función para cancelar el listener de Firestore
+
+// ── Listener de locks en tiempo real ──────────────────────────
+let locksUnsubscribe = null;         // función para cancelar el listener de locks
+let locksVigentesRT = new Set();     // Set actualizado en tiempo real, sin await
 
 // ── Tarjeta oculta (no aparece en listado ni búsqueda del admin) ──
 const TARJETA_OCULTA = '99441180'; // ← reemplazá con tu número real de tarjeta
+
+// ── Emails autorizados y sus roles ────────────────────────────────
+const ROLES = {
+    'ludmila@masqueburgers.com': 'Ludmila - Moza',
+    'elvio@masqueburgers.com': 'Elvio - Mozo',
+    // Cualquier otro email autenticado se trata como admin
+};
 
 // ── Helpers UI ─────────────────────────────────────────────
 function hideLoader() { document.getElementById('global-loader')?.classList.add('hidden-loader'); }
@@ -59,24 +80,299 @@ function setBtnLoading(btnId, textId, spinnerId, loading, label) {
 // mostrar cualquier cosa. Si no hay usuario, redirige al login.
 firebase.auth().onAuthStateChanged(async (user) => {
     if (!user) {
-        // Sin sesión → patear al login sin mostrar el panel
         window.location.replace('login.html');
         return;
     }
-    // Sesión válida → cargar la app normalmente
+
+    // Detectar rol según email
+    // Código nuevo
+esMozo = ROLES[user.email] !== undefined;
+
     await initDB();
     await initProductos();
+
+    // ── Limpiar locks propios de sesiones anteriores al arrancar ──
+    // Si la pestaña se cerró sin liberar el lock, este cleanup lo resuelve.
+    await limpiarLocksDelUsuario(user.uid);
+
     hideLoader();
     renderStock();
+    aplicarRol();
+    iniciarListenerLocks();    // locks en tiempo real para todos
+    iniciarListenerStock();    // usuarios en tiempo real para todos (admin y mozo)
+
+    // Liberar lock propio si el usuario cierra la pestaña o el navegador
+    window.addEventListener('beforeunload', () => {
+        if (tarjetaReservadaActual) {
+            // beforeunload no puede esperar async, usamos sendBeacon como fallback
+            // pero también disparamos el delete (funciona si la conexión sigue)
+            db.collection('locks_tarjetas').doc(tarjetaReservadaActual).delete().catch(() => {});
+        }
+    });
 });
 
 // ── Cerrar sesión ──────────────────────────────────────────
-function cerrarSesion() {
+async function cerrarSesion() {
+    // Liberar cualquier reserva activa antes de cerrar sesión
+    if (tarjetaReservadaActual) {
+        await liberarReservaTarjeta(tarjetaReservadaActual).catch(() => {});
+    }
     firebase.auth().signOut().then(() => {
         window.location.replace('login.html');
     }).catch(() => {
         showToast('Error al cerrar sesión. Intentá de nuevo.', 'error');
     });
+}
+
+// ── Aplicar restricciones de rol ───────────────────────────
+// Oculta tabs y adapta el layout según si es mozo o admin.
+function aplicarRol() {
+    if (!esMozo) return; // admin ve todo, nada que hacer
+
+    // Ocultar tabs restringidos para el mozo
+    const tabsOcultos = ['productos', 'tyc', 'ads'];
+    tabsOcultos.forEach(t => {
+        document.getElementById(`btn-tab-${t}`)?.classList.add('hidden');
+    });
+
+    // ── Inyectar estilos mejorados para tablet (modo mozo) ──
+    const style = document.createElement('style');
+    style.id = 'mozo-tablet-styles';
+    style.textContent = `
+        /* ── Navegación tablet ── */
+        nav { padding: 0.6rem 1rem !important; min-height: 56px; }
+        #nav-titulo { font-size: 0.9rem !important; }
+
+        /* ── Botones de tab: agrupados y con buen tap target ── */
+        .mozo-nav-tabs {
+            display: flex !important;
+            align-items: center !important;
+            gap: 0.25rem !important;
+            background: rgba(255,255,255,0.03) !important;
+            border: 1px solid rgba(255,255,255,0.07) !important;
+            border-radius: 0.75rem !important;
+            padding: 0.25rem !important;
+        }
+        .mozo-nav-tabs button {
+            padding: 0.45rem 0.9rem !important;
+            border-radius: 0.5rem !important;
+            font-size: 0.6rem !important;
+            min-height: 36px !important;
+            white-space: nowrap !important;
+        }
+        .mozo-nav-tabs button.tab-active {
+            background: rgba(59,130,246,0.15) !important;
+            border-bottom: none !important;
+        }
+
+        /* ── Botón salir compacto ── */
+        .mozo-salir-btn {
+            min-width: 36px !important;
+            min-height: 36px !important;
+            padding: 0.5rem !important;
+            border-radius: 0.5rem !important;
+            background: rgba(255,255,255,0.04) !important;
+            border: 1px solid rgba(255,255,255,0.08) !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+        }
+        .mozo-salir-btn span { display: none !important; }
+
+        /* ── Main layout ── */
+        main { padding: 0.75rem !important; }
+
+        /* ── Sección gestión: columna única en tablet ── */
+        #section-gestion { grid-template-columns: 1fr !important; gap: 1rem !important; }
+        #columnaIzquierda { grid-column: span 1 !important; }
+        #columnaDerecha   { grid-column: span 1 !important; }
+
+        /* ── Panel buscar: inputs y botones touch-friendly ── */
+        #buscarTarjeta { font-size: 2.2rem !important; padding: 1.1rem !important; }
+        #btnBuscar { padding: 1.1rem !important; font-size: 0.95rem !important; min-height: 58px !important; }
+
+        /* ── Panel activación ── */
+        #nuevoNombre, #nuevoTel { padding: 1.1rem !important; font-size: 1rem !important; min-height: 56px !important; }
+        #btnActivar { padding: 1.1rem !important; font-size: 0.95rem !important; min-height: 60px !important; }
+
+        /* ── Botones cargar/canjear ── */
+        #btnCargar, #btnCanjear { padding: 1rem !important; font-size: 0.9rem !important; min-height: 56px !important; }
+
+        /* ── Card info del cliente: más compacta ── */
+        #activaPanel .card-mini { padding: 1.1rem !important; }
+        #adminNombre { font-size: 1.3rem !important; }
+        #adminPuntos { font-size: 2.5rem !important; }
+
+        /* ── Historial ── */
+        #historial .text-sm  { font-size: 0.875rem !important; }
+        #historial .text-[10px] { font-size: 0.65rem !important; }
+
+        /* ── Sección stock: tabla más legible en tablet ── */
+        #section-stock table th,
+        #section-stock table td { padding: 0.75rem 0.875rem !important; font-size: 0.8rem !important; }
+    `;
+    document.head.appendChild(style);
+
+    // ── Reorganizar la nav: agrupar tabs y mejorar el botón salir ──
+    const navRight = document.querySelector('nav > div:last-child');
+    if (navRight) {
+        navRight.classList.add('mozo-nav-tabs');
+        // Hacer el botón salir compacto en tablet
+        const btnSalir = navRight.querySelector('button[onclick="cerrarSesion()"]');
+        if (btnSalir) {
+            btnSalir.classList.add('mozo-salir-btn');
+        }
+    }
+
+    // Ocultar botón "Generar números" para mozos (solo admin puede crear tarjetas)
+    const btnGenerar = document.querySelector('button[onclick="mostrarGenerador()"]');
+    if (btnGenerar) btnGenerar.classList.add('hidden');
+
+    // Indicador visual de modo mozo
+    const titulo = document.getElementById('nav-titulo');
+    if (titulo) {
+        titulo.insertAdjacentHTML('afterend',
+            '<span class="text-[9px] font-black uppercase tracking-widest text-emerald-500/60 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full ml-2">Mozo</span>'
+        );
+    }
+}
+
+// ── Reserva de tarjeta (lock optimista) ────────────────────
+// Escribe un documento en Firestore para marcar la tarjeta como "asignándose".
+// Esto permite que otros dispositivos la vean en tiempo real y no la tomen.
+async function reservarTarjeta(tarjeta) {
+    const lockRef = db.collection('locks_tarjetas').doc(tarjeta);
+    const userId  = firebase.auth().currentUser?.uid || 'desconocido';
+    try {
+        // Transacción atómica: solo reservar si no hay lock de OTRO dispositivo
+        await db.runTransaction(async (tx) => {
+            const snap = await tx.get(lockRef);
+            if (snap.exists) {
+                const data = snap.data();
+                // Lock propio (mismo uid): OK, renovar
+                if (data.userId === userId) {
+                    tx.set(lockRef, { userId, tarjeta, creadoEn: new Date().toISOString() });
+                    return;
+                }
+                // Lock de otro uid: rechazar
+                throw new Error('ya_reservada');
+            }
+            // Sin lock: crear
+            tx.set(lockRef, { userId, tarjeta, creadoEn: new Date().toISOString() });
+        });
+
+        tarjetaReservadaActual = tarjeta;
+        return true;
+    } catch (err) {
+        if (err.message === 'ya_reservada') return false;
+        console.error('Error al reservar tarjeta:', err);
+        return false;
+    }
+}
+
+// Libera el lock de una tarjeta en Firestore
+async function liberarReservaTarjeta(tarjeta) {
+    if (!tarjeta) return;
+    try {
+        await db.collection('locks_tarjetas').doc(tarjeta).delete();
+        if (tarjetaReservadaActual === tarjeta) tarjetaReservadaActual = null;
+    } catch (e) { /* silencioso */ }
+}
+
+// Verifica si una tarjeta tiene un lock vigente de OTRO dispositivo.
+// Si encuentra un lock expirado lo elimina automáticamente (cleanup oportunista).
+async function tieneLockVigente(tarjeta) {
+    try {
+        const userId = firebase.auth().currentUser?.uid || 'desconocido';
+        const snap = await db.collection('locks_tarjetas').doc(tarjeta).get();
+        if (!snap.exists) return false;
+        const data = snap.data();
+        // Lock propio: nunca bloquear
+        if (data.userId === userId) return false;
+        // Lock expirado: limpiarlo y dejar pasar
+        if (new Date(data.expiresAt) <= new Date()) {
+            await db.collection('locks_tarjetas').doc(tarjeta).delete().catch(() => {});
+            return false;
+        }
+        return true;
+    } catch { return false; }
+}
+
+// ── Sincronización en tiempo real de la sección stock ──────
+// Activa un listener de Firestore que actualiza la tabla cuando cambia algo
+function iniciarListenerStock() {
+    // Si ya hay un listener activo, no duplicarlo
+    if (stockUnsubscribe) return;
+
+    stockUnsubscribe = db.collection('usuarios').onSnapshot((snapshot) => {
+        snapshot.docChanges().forEach((change) => {
+            const data = change.doc.data();
+            const tarjeta = change.doc.id;
+            if (!data.tarjeta) data.tarjeta = tarjeta;
+
+            if (change.type === 'added') {
+                const existe = usuarios.some(u => u.tarjeta === tarjeta);
+                if (!existe) usuarios.push(data);
+            } else if (change.type === 'modified') {
+                const idx = usuarios.findIndex(u => u.tarjeta === tarjeta);
+                if (idx !== -1) usuarios[idx] = data;
+                else usuarios.push(data);
+            } else if (change.type === 'removed') {
+                usuarios = usuarios.filter(u => u.tarjeta !== tarjeta);
+            }
+        });
+        // Solo re-renderizar si la sección stock está visible
+        const stockVisible = !document.getElementById('section-stock')?.classList.contains('hidden');
+        if (stockVisible) renderStock();
+    }, (err) => {
+        console.error('Error en listener de stock:', err);
+    });
+}
+
+function detenerListenerStock() {
+    if (stockUnsubscribe) {
+        stockUnsubscribe();
+        stockUnsubscribe = null;
+    }
+}
+
+// ── Listener de locks en tiempo real (para TODOS los usuarios) ─────
+// Mantiene locksVigentesRT actualizado sin ningún round-trip a Firestore.
+// Cuando un mozo reserva una tarjeta, todos los dispositivos reciben el cambio
+// en ~100-300ms y la tarjeta aparece como "Asignándose…" al instante.
+function iniciarListenerLocks() {
+    if (locksUnsubscribe) return;
+    locksUnsubscribe = db.collection('locks_tarjetas').onSnapshot((snapshot) => {
+        // Cualquier documento en locks_tarjetas = tarjeta en asignación activa.
+        // No hay expiración: el lock existe mientras el usuario está completando el formulario.
+        locksVigentesRT.clear();
+        snapshot.docs.forEach(doc => locksVigentesRT.add(doc.id));
+        // Re-renderizar stock si está visible para que todos vean el cambio al instante
+        const stockVisible = !document.getElementById('section-stock')?.classList.contains('hidden');
+        if (stockVisible) renderStock();
+    }, (err) => {
+        console.error('Error en listener de locks:', err);
+    });
+}
+
+// ── Limpieza de locks al iniciar sesión ─────────────────────
+// Solo borra los locks que le pertenecen a ESTE usuario (sesión anterior colgada).
+// Lee todos los docs (son 2-3 máximo) y filtra por userId en el cliente —
+// sin query .where() que requeriría índice en Firestore.
+// Los locks de otros dispositivos activos NO se tocan.
+async function limpiarLocksDelUsuario(userId) {
+    try {
+        const snap = await db.collection('locks_tarjetas').get();
+        if (snap.empty) return;
+        const propios = snap.docs.filter(doc => doc.data().userId === userId);
+        if (propios.length === 0) return;
+        const batch = db.batch();
+        propios.forEach(doc => batch.delete(doc.ref));
+        await batch.commit();
+        console.log('Locks propios limpiados al iniciar:', propios.length);
+    } catch (e) {
+        console.warn('No se pudieron limpiar locks propios:', e);
+    }
 }
 
 // ── PIN de acceso a Productos ──────────────────────────────
@@ -142,6 +438,10 @@ async function verificarPin() {
 
 // ── Tabs ───────────────────────────────────────────────────
 function switchTab(tab) {
+    // Mozo: bloquear acceso a tabs restringidos
+    const tabsRestringidos = ['productos', 'tyc', 'ads'];
+    if (esMozo && tabsRestringidos.includes(tab)) return;
+
     // Si intenta ir a Productos sin PIN verificado, pide el PIN
     if (tab === 'productos' && !productosPinVerificado) {
         abrirModalPin();
@@ -167,7 +467,8 @@ function switchTab(tab) {
         document.getElementById(`btn-tab-${tab}`)?.classList.add("tab-active");
         document.getElementById(`btn-tab-${tab}`)?.classList.remove("text-slate-500");
 
-        if (tab === 'stock') renderStock();
+        if (tab === 'stock') { iniciarListenerStock(); renderStock(); }
+        else { detenerListenerStock(); }
         if (tab === 'productos') renderPanelProductos();
         if (tab === 'tyc') cargarTyc();
         if (tab === 'ads') cargarAd();
@@ -230,6 +531,10 @@ function modoBusqueda() {
 
 // ── Volver al estado inicial ───────────────────────────────
 function volverAlInicio() {
+    // Liberar reserva si había una activa
+    if (tarjetaReservadaActual) {
+        liberarReservaTarjeta(tarjetaReservadaActual);
+    }
     clienteActual = null;
     tarjetaBuscadaActual = null;
     pinVisible = false;
@@ -275,7 +580,23 @@ async function buscarCliente() {
     tarjetaBuscadaActual = tarjeta;
 
     if (!usuario.asignada) {
-        // Tarjeta libre: centrar panel de activación (col-span-12)
+        // ── Verificación rápida con el Set en memoria (sin round-trip) ──
+        // Si el listener ya registró el lock de otro dispositivo, bloqueamos al instante.
+        if (locksVigentesRT.has(tarjeta) && tarjetaReservadaActual !== tarjeta) {
+            showToast("Esta tarjeta está siendo asignada por otro usuario.", "warn");
+            document.getElementById("noCliente").classList.remove("hidden");
+            return;
+        }
+
+        // ── Reserva atómica en Firestore (última línea de defensa contra race conditions) ──
+        const reservaOk = await reservarTarjeta(tarjeta);
+        if (!reservaOk) {
+            showToast("Esta tarjeta está siendo asignada por otro usuario", "warn");
+            document.getElementById("noCliente").classList.remove("hidden");
+            return;
+        }
+
+        // Mostrar panel de activación
         modoActivacion();
         document.getElementById("buscarPanel").classList.add("hidden");
         document.getElementById("activaPanel").classList.add("hidden");
@@ -285,15 +606,31 @@ async function buscarCliente() {
         document.getElementById("previewNombre").innerText = "NOMBRE CLIENTE";
         document.getElementById("nuevoNombre").value = "";
         document.getElementById("nuevoTel").value = "";
+
+        // Badge informativo: la tarjeta está bloqueada para otros mientras se completa
+        const timerElViejo = document.getElementById('reserva-timer-badge');
+        if (timerElViejo) timerElViejo.remove();
+        const panelAct = document.getElementById('panelActivacion');
+        if (panelAct) {
+            panelAct.insertAdjacentHTML('afterbegin',
+                `<div id="reserva-timer-badge" class="flex items-center gap-2 mb-4 px-4 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20">
+                    <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse flex-shrink-0"></span>
+                    <p class="text-[10px] font-black uppercase tracking-widest text-amber-400">En asignación — bloqueada para otros dispositivos</p>
+                </div>`
+            );
+        }
     } else {
         // Tarjeta asignada: mostrar activaPanel con datos del cliente
         clienteActual = usuario;
         document.getElementById("buscarPanel").classList.add("hidden");
         document.getElementById("activaPanel").classList.remove("hidden");
-        document.getElementById("clienteAcciones").classList.remove("hidden");
+        // Mozos: solo ven la info del cliente, sin botones de cargar/canjear
+        if (!esMozo) {
+            document.getElementById("clienteAcciones").classList.remove("hidden");
+            populateSelects();
+            verificarLimiteCanje();
+        }
         renderCliente();
-        populateSelects();
-        verificarLimiteCanje();
     }
 }
 
@@ -304,59 +641,73 @@ function actualizarPreviewTarjeta() {
 }
 
 async function activarTarjeta() {
-    const nombre = document.getElementById("nuevoNombre").value;
-    const tel = document.getElementById("nuevoTel").value;
+    const nombre = document.getElementById("nuevoNombre").value.trim();
+    const tel    = document.getElementById("nuevoTel").value.trim();
     if (!nombre || !tel) { showToast("Completá el nombre y teléfono del cliente.", "warn"); return; }
 
     setBtnLoading('btnActivar', 'btnActivarText', 'btnActivarSpinner', true, 'Activar Tarjeta');
-    
-    // 1. Generar PIN único de 4 dígitos (ej: 0492)
+
+    // 1. Generar PIN único de 4 dígitos fuera de la transacción
     let nuevoPin;
     let existePin = true;
     while (existePin) {
         nuevoPin = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
-        // Chequeamos que nadie más tenga este PIN
         existePin = usuarios.some(u => u.pin === nuevoPin);
     }
 
-    // 2. Guardar en el array y Firebase
-    const index = usuarios.findIndex(u => u.tarjeta === tarjetaBuscadaActual);
-    usuarios[index] = {
-        ...usuarios[index],
+    const docRef = db.collection('usuarios').doc(tarjetaBuscadaActual);
+    const datosNuevos = {
         asignada: true, nombre, telefono: tel, puntos: 100, pin: nuevoPin, pinCambiado: false,
         historial: [{ idTx: generarIdTx(), fecha: new Date().toISOString().split('T')[0], descripcion: "Bono Bienvenida", puntos: 100 }]
     };
-    await updateUsuario(usuarios[index]);
-    
+
+    try {
+        // 2. Transacción atómica: verifica que siga libre antes de escribir.
+        //    Si otro mozo activó la misma tarjeta al mismo tiempo, esto falla limpio.
+        await db.runTransaction(async (tx) => {
+            const snap = await tx.get(docRef);
+            if (!snap.exists) throw new Error('no_existe');
+            if (snap.data().asignada === true) throw new Error('ya_activada');
+            tx.update(docRef, datosNuevos);
+        });
+    } catch (err) {
+        setBtnLoading('btnActivar', 'btnActivarText', 'btnActivarSpinner', false, 'Activar Tarjeta');
+        if (err.message === 'ya_activada') {
+            showToast('Esta tarjeta ya fue activada por otro mozo. Buscá otro número.', 'error');
+        } else if (err.message === 'no_existe') {
+            showToast('Tarjeta no encontrada en el sistema.', 'error');
+        } else {
+            showToast('Error al activar. Intentá de nuevo.', 'error');
+        }
+        volverAlInicio();
+        return;
+    }
+
+    // 3. Sync cache local + liberar reserva
+    const index = usuarios.findIndex(u => u.tarjeta === tarjetaBuscadaActual);
+    if (index !== -1) usuarios[index] = { ...usuarios[index], ...datosNuevos };
+    await liberarReservaTarjeta(tarjetaBuscadaActual);
+
     setBtnLoading('btnActivar', 'btnActivarText', 'btnActivarSpinner', false, 'Activar Tarjeta');
 
-    // 3. Abrir modal de éxito con QR — el PIN nunca aparece en pantalla
+    // 4. Abrir modal de éxito con QR
     document.getElementById('modalPinNombre').innerText = nombre;
-
-    // Construir la URL a la que apunta el QR: pin.html con ?pin=XXXX
     const urlQR = `https://masqueburgers.com.ar/pin.html?pin=${nuevoPin}`;
-
-    // Generar el QR dentro del contenedor (limpiar primero si ya había uno)
     const qrContainer = document.getElementById('qrActivacionContainer');
     qrContainer.innerHTML = '';
     new QRCode(qrContainer, {
-        text: urlQR,
-        width: 180,
-        height: 180,
-        colorDark: '#ffffff',
-        colorLight: '#0a0a10',
+        text: urlQR, width: 180, height: 180,
+        colorDark: '#ffffff', colorLight: '#0a0a10',
         correctLevel: QRCode.CorrectLevel.M
     });
 
     document.getElementById('modalPinActivacion').classList.remove('hidden');
-    // Mostrar el PIN en texto para los que no pueden escanear el QR
     const pinTextoEl = document.getElementById('pinActivacionTexto');
     if (pinTextoEl) pinTextoEl.textContent = nuevoPin;
     lockScroll();
-    
+
     document.getElementById("nuevoNombre").value = "";
     document.getElementById("nuevoTel").value = "";
-    // No llamamos a buscarCliente() — el modal tapa todo y al cerrarlo volverAlInicio() limpia el estado
 }
 
 function cerrarModalPinActivacion() {
@@ -513,6 +864,7 @@ let modalModoActual = null;   // 'carga' | 'canje'
 let productoSeleccionado = null;
 
 function abrirModalProductos(modo) {
+    if (esMozo) return; // mozos no pueden cargar ni canjear
     modalModoActual = modo;
     productoSeleccionado = null;
     document.getElementById('modalProdBuscador').value = '';
@@ -739,10 +1091,14 @@ function renderStock() {
     tbody.innerHTML = "";
     const busqueda = (document.getElementById("stockBuscador")?.value || "").toLowerCase().trim();
 
+    // Usar el Set en memoria mantenido por el listener en tiempo real (sin round-trip a Firestore)
+    const locksVigentes = locksVigentesRT;
+
     let lista = usuarios.filter(u => {
         if (u.tarjeta === TARJETA_OCULTA) return false; // tarjeta oculta
-        if (filtroActual === 'libre'    && u.asignada)  return false;
-        if (filtroActual === 'asignada' && !u.asignada) return false;
+        const enLockFiltro = locksVigentesRT.has(u.tarjeta);
+        if (filtroActual === 'libre'    && u.asignada) return false;
+        if (filtroActual === 'asignada' && !u.asignada && !enLockFiltro) return false;
         if (busqueda) {
             // Se limpian los espacios para que coincida aunque copien el número con formato
             const ok = u.tarjeta.includes(busqueda.replace(/\s+/g, ''))
@@ -758,6 +1114,17 @@ function renderStock() {
     vacio?.classList.add("hidden");
 
     lista.forEach(u => {
+        const enLock = !u.asignada && locksVigentes.has(u.tarjeta);
+        const estadoBadge = u.asignada
+            ? `<span class="px-3 py-1 rounded-full text-[9px] font-black uppercase bg-green-900/40 text-green-500">Asignada</span>
+               ${u.pin ? `<span class="block mt-2 text-[10px] text-green-400 font-mono tracking-widest font-bold">PIN: ${u.pin}</span>` : ''}`
+            : enLock
+                ? `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] font-black uppercase bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                       <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
+                       Asignándose…
+                   </span>`
+                : `<span class="px-3 py-1 rounded-full text-[9px] font-black uppercase bg-emerald-500/10 text-emerald-500">Libre</span>`;
+
         tbody.innerHTML += `
             <tr class="border-b border-white/5 hover:bg-white/[0.02] transition-all group">
                 <td class="p-5">
@@ -775,35 +1142,39 @@ function renderStock() {
                         </button>
                     </div>
                 </td>
-                <td class="p-5">
-                    <span class="px-3 py-1 rounded-full text-[9px] font-black uppercase ${u.asignada ? 'bg-green-900/40 text-green-500' : 'bg-emerald-500/10 text-emerald-500'}">
-                        ${u.asignada ? 'Asignada' : 'Libre'}
-                    </span>
-                    ${u.asignada && u.pin ? `<span class="block mt-2 text-[10px] text-green-400 font-mono tracking-widest font-bold">PIN: ${u.pin}</span>` : ''}
-                </td>
+                <td class="p-5">${estadoBadge}</td>
                 <td class="p-5 text-slate-300 font-bold text-sm">${u.nombre || '—'}</td>
                 <td class="p-5 text-slate-500 font-mono text-sm">${u.telefono || '—'}</td>
                 <td class="p-5 font-black text-sm">${u.puntos}</td>
                 <td class="p-5">
                     ${u.asignada ? `
                     <div class="flex items-center gap-2">
-                        <button onclick="abrirModalEditar('${u.tarjeta}')"
+                        <button onclick="abrirModalEditar('${u.tarjeta}')" 
                             class="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-blue-800/30 hover:text-blue-400 text-slate-400 text-[10px] font-bold border border-white/5 transition-all">
                             Editar
                         </button>
-                        <button onclick="resetearPuntosDesdeTabla('${u.tarjeta}')"
+                        ${!esMozo ? `
+                        <button onclick="resetearPuntosDesdeTabla('${u.tarjeta}')" 
                             class="px-3 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 text-[10px] font-bold border border-amber-500/10 transition-all">
                             Resetear
                         </button>
-                        <button onclick="eliminarDesdeTabla('${u.tarjeta}')"
+                        <button onclick="eliminarDesdeTabla('${u.tarjeta}')" 
                             class="px-3 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-[10px] font-bold border border-rose-500/10 transition-all">
                             Eliminar
                         </button>
-                    </div>` : ''}
+                        ` : ''}
+                    </div>` : enLock && !esMozo ? `
+                    <button onclick="liberarLockDesdeTabla('${u.tarjeta}')" 
+                        class="px-3 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-[10px] font-bold border border-rose-500/10 transition-all flex items-center gap-1.5">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><rect x="5" y="11" width="14" height="10" rx="2" stroke="currentColor" stroke-width="1.8" fill="none"/><path d="M8 11V7a4 4 0 018 0v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                        Liberar
+                    </button>` : enLock ? `<span class="text-[10px] text-amber-400/60 font-bold italic">En proceso…</span>` : ''}
                 </td>
             </tr>`;
-    });
-}
+
+            }); // cierra el forEach
+
+} // cierra renderStock()
 
 // ── Modal Editar Tarjeta ───────────────────────────────────
 let tarjetaEditandoActual = null;
@@ -916,6 +1287,23 @@ function showConfirm({ titulo, mensaje, tipo = 'danger', labelAceptar = 'Confirm
 }
 
 // ── Eliminar directamente desde la tabla sin abrir el modal de edición
+async function liberarLockDesdeTabla(tarjeta) {
+    showConfirm({
+        titulo: 'Liberar tarjeta',
+        mensaje: `¿Liberar la tarjeta ${tarjeta.replace(/(\d{4})(\d{4})/, '$1 $2')} que quedó en estado "Asignándose"? Quedará disponible nuevamente.`,
+        tipo: 'warn',
+        labelAceptar: 'Liberar',
+        onAceptar: async () => {
+            try {
+                await db.collection('locks_tarjetas').doc(tarjeta).delete();
+                showToast('Tarjeta liberada correctamente.', 'success');
+            } catch(e) {
+                showToast('Error al liberar la tarjeta.', 'error');
+            }
+        }
+    });
+}
+
 async function resetearPuntosDesdeTabla(tarjeta) {
     const u = usuarios.find(x => x.tarjeta === tarjeta);
     if (!u) return;
@@ -1562,15 +1950,13 @@ function actualizarPreviewAd() {
 
 // Refleja los datos guardados en Firebase en el panel de estado
 function actualizarEstadoFirebase(d) {
-    document.getElementById('adEstActivo').textContent  = d?.activa
-        ? '✅ Activo'
-        : '⬜ Inactivo';
-    document.getElementById('adEstActivo').className = d?.activa
-        ? 'text-xs font-black text-emerald-400'
-        : 'text-xs font-black text-slate-500';
-    document.getElementById('adEstTitulo').textContent  = d?.titulo    || '—';
-    document.getElementById('adEstTag').textContent     = d?.tag       || '—';
-    document.getElementById('adEstImagen').textContent  = d?.imagen
-        ? '✓ ' + d.imagen.replace(/^https?:\/\//, '').substring(0, 40) + '…'
-        : '—';
+    const activa = d && d.activa;
+    const elActivo = document.getElementById('adEstActivo');
+    elActivo.textContent = activa ? 'Activo' : 'Inactivo';
+    elActivo.className = activa ? 'text-xs font-black text-emerald-400' : 'text-xs font-black text-slate-500';
+    document.getElementById('adEstTitulo').textContent = d && d.titulo ? d.titulo : '-';
+    document.getElementById('adEstTag').textContent = d && d.tag ? d.tag : '-';
+    var imgText = '-';
+    if (d && d.imagen) { imgText = '+ ' + d.imagen.replace(/^https?:\/\//, '').substring(0, 40) + '...'; }
+    document.getElementById('adEstImagen').textContent = imgText;
 }
