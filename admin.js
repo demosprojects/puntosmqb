@@ -306,9 +306,8 @@ function iniciarListenerStock() {
 
     stockUnsubscribe = db.collection('usuarios').onSnapshot((snapshot) => {
         snapshot.docChanges().forEach((change) => {
-            const data = change.doc.data();
             const tarjeta = change.doc.id;
-            if (!data.tarjeta) data.tarjeta = tarjeta;
+            const data = { tarjeta, ...change.doc.data() };
 
             if (change.type === 'added') {
                 const existe = usuarios.some(u => u.tarjeta === tarjeta);
@@ -1725,8 +1724,6 @@ function verificarLimiteCanje() {
         } else {
             contNormal.classList.remove("hidden");
             contBloqueo.classList.add("hidden");
-            document.getElementById("selectProductoAgregar").value = "";
-            document.getElementById("previewPuntosAgregar").classList.add("hidden");
         }
     }
 }
