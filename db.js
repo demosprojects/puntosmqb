@@ -19,7 +19,7 @@ let usuarios = [];
 async function initDB() {
   try {
     const snapshot = await db.collection("usuarios").get();
-    usuarios = snapshot.docs.map(doc => doc.data());
+    usuarios = snapshot.docs.map(doc => ({ tarjeta: doc.id, ...doc.data() }));
     console.log("Base de datos cargada. Tarjetas totales:", usuarios.length);
   } catch (error) {
     console.error("Error cargando Firebase:", error);
@@ -33,7 +33,7 @@ async function getUsuario(tarjeta) {
     const docSnap = await docRef.get();
     
     if (docSnap.exists) {
-      return docSnap.data();
+      return { tarjeta: docSnap.id, ...docSnap.data() };
     } else {
       return null;
     }
